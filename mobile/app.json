@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "SpeedWatch",
+    "slug": "speedwatch",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.sail.speedwatch",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "SpeedWatch needs your location to monitor vehicle speed and enforce safety limits.",
+        "NSLocationWhenInUseUsageDescription": "SpeedWatch needs your location to monitor vehicle speed.",
+        "UIBackgroundModes": [
+          "location"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.sail.speedwatch",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "SpeedWatch needs your location to monitor vehicle speed."
+        }
+      ]
+    ],
+    "sdkVersion": "54.0.0"
+  }
+}

@@ -3,7 +3,9 @@ Geofence Checker Service
 Given a GPS coordinate, returns the applicable speed limit.
 This is called on EVERY position update — must be fast.
 """
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import] 
 from sqlalchemy import text
 from datetime import datetime
 import json

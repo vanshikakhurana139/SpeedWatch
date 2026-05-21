@@ -2,8 +2,11 @@
 Shared FastAPI dependencies — injected into route handlers.
 Think of these as reusable middleware for authentication and DB access.
 """
+# pyrefly: ignore [missing-import]
 from fastapi import Depends, HTTPException, status
+# pyrefly: ignore [missing-import]
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 # pyrefly: ignore [missing-import]
 from redis.asyncio import Redis
