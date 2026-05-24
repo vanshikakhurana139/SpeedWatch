@@ -5,13 +5,18 @@ POST   /api/geofences/    — create a new zone (supervisor)
 PUT    /api/geofences/{id} — update a zone
 DELETE /api/geofences/{id} — soft delete a zone
 """
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends, HTTPException
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import]
 from sqlalchemy import text
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 from typing import Optional, List
 from deps import get_db, get_current_user, require_supervisor, get_redis
 import json
+import uuid
 
 router = APIRouter(prefix="/geofences", tags=["Geofences"])
 
@@ -108,7 +113,7 @@ async def update_geofence(
 ):
     """Updates a geofence's properties."""
     updates = []
-    params = {"id": geofence_id}
+    params = {"id": uuid.UUID(geofence_id)}
 
     if request.name is not None:
         updates.append("name = :name")
@@ -144,7 +149,7 @@ async def delete_geofence(
     """Soft-deletes a geofence (sets active=false)."""
     await db.execute(
         text("UPDATE geofences SET active = false WHERE id = :id"),
-        {"id": geofence_id}
+        {"id": uuid.UUID(geofence_id)}
     )
     await redis.delete("geofences_cache")
     return {"status": "deleted"}

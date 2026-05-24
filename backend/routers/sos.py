@@ -1,10 +1,15 @@
 """SOS emergency alert endpoint."""
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import]
 from sqlalchemy import text
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 from deps import get_db, get_current_user, get_redis
 import json
+import uuid
 
 router = APIRouter(prefix="/sos", tags=["SOS"])
 
@@ -29,8 +34,8 @@ async def send_sos(
         """),
         {
             "did": current_user.id,
-            "vid": request.vehicle_id,
-            "tid": request.trip_id,
+            "vid": uuid.UUID(request.vehicle_id),
+            "tid": uuid.UUID(request.trip_id),
             "lat": request.lat,
             "lng": request.lng
         }

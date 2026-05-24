@@ -2,8 +2,11 @@
 Vehicle management endpoints.
 GET /api/vehicles/ — list vehicles for current user
 """
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import]
 from sqlalchemy import text
 from deps import get_db, get_current_user
 

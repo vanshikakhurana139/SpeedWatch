@@ -5,11 +5,15 @@ POST /api/auth/refresh — refreshes access token
 GET  /api/auth/me      — current user profile
 """
 import hashlib
+# pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends, HTTPException, status
+# pyrefly: ignore [missing-import]
 from sqlalchemy.ext.asyncio import AsyncSession
+# pyrefly: ignore [missing-import]
 from sqlalchemy import text
 from datetime import datetime, timedelta, timezone
 from jose import jwt
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 from typing import Optional
 from deps import get_db, get_current_user, settings

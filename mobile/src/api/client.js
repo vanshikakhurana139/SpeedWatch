@@ -28,6 +28,12 @@ apiClient.interceptors.response.use(
     async (error) => {
         if (error.response?.status === 401) {
             await AsyncStorage.removeItem('auth_token');
+            try {
+                const { useAuthStore } = require('../store/authStore');
+                useAuthStore.getState().logout();
+            } catch (err) {
+                console.error('Failed to logout store on 401:', err);
+            }
         }
         return Promise.reject(error);
     }

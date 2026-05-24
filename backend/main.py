@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 
-from routers import auth, vehicles, trips, violations, geofences, websocket, sos
+from routers import auth, vehicles, trips, violations, geofences, websocket, sos, reports
 from deps import engine
 import models  # Ensures models are registered
 
@@ -62,6 +62,7 @@ app.include_router(trips.router, prefix="/api")
 app.include_router(violations.router, prefix="/api")
 app.include_router(geofences.router, prefix="/api")
 app.include_router(sos.router, prefix="/api")
+app.include_router(reports.router, prefix="/api")
 
 # WebSocket routes (no /api prefix — they use /ws/)
 app.include_router(websocket.router)

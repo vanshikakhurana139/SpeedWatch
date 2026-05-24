@@ -9,10 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 # pyrefly: ignore [missing-import]
 from sqlalchemy import text
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 from typing import Optional
 from deps import get_db, get_current_user, get_redis
 import json
+import uuid
 
 router = APIRouter(prefix="/violations", tags=["Violations"])
 
@@ -78,8 +80,8 @@ async def log_violation(
             RETURNING id
         """),
         {
-            "trip_id": request.trip_id,
-            "vehicle_id": request.vehicle_id,
+            "trip_id": uuid.UUID(request.trip_id),
+            "vehicle_id": uuid.UUID(request.vehicle_id),
             "driver_id": current_user.id,
             "speed": request.speed_recorded,
             "zone_limit": request.zone_limit,
@@ -88,7 +90,7 @@ async def log_violation(
             "vtype": request.violation_type,
             "lat": request.lat,
             "lng": request.lng,
-            "gf_id": request.geofence_id,
+            "gf_id": uuid.UUID(request.geofence_id) if request.geofence_id else None,
             "offline": request.synced_from_offline
         }
     )
@@ -102,7 +104,7 @@ async def log_violation(
                 violation_count = violation_count + 1
             WHERE id = :tid
         """),
-        {"penalty": penalty_amount, "tid": request.trip_id}
+        {"penalty": penalty_amount, "tid": uuid.UUID(request.trip_id)}
     )
 
     # Update or insert daily penalty summary
@@ -163,11 +165,11 @@ async def list_violations(
         params["my_id"] = current_user.id
     elif driver_id:
         where_clauses.append("v.driver_id = :driver_id")
-        params["driver_id"] = driver_id
+        params["driver_id"] = uuid.UUID(driver_id)
 
     if trip_id:
         where_clauses.append("v.trip_id = :trip_id")
-        params["trip_id"] = trip_id
+        params["trip_id"] = uuid.UUID(trip_id)
 
     where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
 
