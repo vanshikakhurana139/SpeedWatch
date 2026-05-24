@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
         fontFamily: Typography.sans.family,
         fontSize: Typography.sans.sizes.caption,
         fontWeight: Typography.sans.weights.bold,
-        color: Colors.text.primary,
+        color: Colors.text.inverse,
         letterSpacing: 0.5,
     },
     scrollContent: {
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
         fontFamily: Typography.sans.family,
         fontSize: Typography.sans.sizes.body,
         fontWeight: Typography.sans.weights.bold,
-        color: Colors.text.primary,
+        color: Colors.text.inverse,
         letterSpacing: 1,
     },
     // Pre-start styles

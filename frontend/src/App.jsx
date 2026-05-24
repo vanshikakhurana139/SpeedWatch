@@ -2,10 +2,9 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
-import ReportsPage from './pages/ReportsPage'
 import { authApi } from './api/auth'
 
-// Protected route — redirects to login if not authenticated
+// ProtectedRoute: if not logged in, send to /login
 function ProtectedRoute({ children }) {
   if (!authApi.isAuthenticated()) {
     return <Navigate to="/login" replace />
@@ -18,6 +17,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
+      {/* All dashboard pages (live map, reports, leaderboard) render inside DashboardPage
+                using the activePage state from dashboardStore — no separate routes needed */}
       <Route
         path="/dashboard"
         element={
@@ -27,16 +28,7 @@ export default function App() {
         }
       />
 
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute>
-            <ReportsPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Default redirect */}
+      {/* Root → dashboard if logged in, else login */}
       <Route
         path="/"
         element={

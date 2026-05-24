@@ -1,32 +1,33 @@
-// Industrial Typography - Monospace for precision
 export const Typography = {
-    // For speed, penalties, distances - needs precision
+    // For precision numbers (speed, penalties)
     mono: {
         family: 'monospace',
         sizes: {
-            huge: 72,      // Main speedometer reading
-            large: 48,     // Penalty amounts
-            medium: 32,    // Zone limits
-            small: 24,     // Metric values
-            tiny: 16,      // Labels
+            huge: 68,        // Speedometer
+            large: 44,       // Penalties
+            medium: 28,      // Limits
+            small: 20,       // Metrics
+            tiny: 14,        // Labels
         },
     },
 
-    // For labels and UI text
+    // SAIL Professional Typography
     sans: {
         family: 'System',
         sizes: {
-            title: 28,
-            heading: 22,
-            body: 17,
-            caption: 15,
-            small: 13,
+            title: 32,       // Screen titles
+            heading: 24,     // Section headers
+            subheading: 20,  // Card headers
+            body: 16,        // Regular text
+            caption: 14,     // Small labels
+            small: 12,       // Tiny text
         },
         weights: {
             regular: '400',
             medium: '500',
             semibold: '600',
             bold: '700',
+            heavy: '800',    // For emphasis
         },
     },
 };

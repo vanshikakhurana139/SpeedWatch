@@ -9,7 +9,9 @@ import {
     Platform,
     Alert,
     ActivityIndicator,
+    Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, Spacing } from '../theme';
 import { useAuthStore } from '../store/authStore';
 
@@ -20,7 +22,7 @@ export const LoginScreen = ({ navigation }) => {
 
     const handleLogin = async () => {
         if (!phone || !password) {
-            Alert.alert('Error', 'Please enter phone number and password');
+            Alert.alert('Required Fields', 'Please enter phone number and password');
             return;
         }
 
@@ -37,46 +39,54 @@ export const LoginScreen = ({ navigation }) => {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <View style={styles.content}>
-                {/* Logo/Title Section */}
-                <View style={styles.header}>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>SPEEDWATCH</Text>
-                        <View style={styles.titleUnderline} />
+            {/* SAIL Navy Header */}
+            <View style={styles.header}>
+                <View style={styles.logoContainer}>
+                    {/* SAIL Logo placeholder - add actual logo */}
+                    <View style={styles.logoCircle}>
+                        <Text style={styles.logoText}>SAIL</Text>
                     </View>
-                    <Text style={styles.subtitle}>
-                        Industrial Vehicle Speed Enforcement
-                    </Text>
-                    <Text style={styles.organization}>SAIL - RDCIS Ranchi</Text>
                 </View>
+                <Text style={styles.title}>SpeedWatch</Text>
+                <Text style={styles.subtitle}>Industrial Vehicle Speed Enforcement</Text>
+                <View style={styles.divider} />
+                <Text style={styles.organization}>RDCIS Ranchi</Text>
+            </View>
 
-                {/* Login Form */}
-                <View style={styles.form}>
+            {/* Login Form */}
+            <View style={styles.formContainer}>
+                <View style={styles.formCard}>
+                    <Text style={styles.formTitle}>Driver Login</Text>
+
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>PHONE NUMBER</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="+91 XXXXXXXXXX"
-                            placeholderTextColor={Colors.text.tertiary}
-                            keyboardType="phone-pad"
-                            value={phone}
-                            onChangeText={setPhone}
-                            autoCapitalize="none"
-                            maxLength={15}
-                        />
+                        <Text style={styles.label}>Mobile Number</Text>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="+91 XXXXXXXXXX"
+                                placeholderTextColor={Colors.text.tertiary}
+                                keyboardType="phone-pad"
+                                value={phone}
+                                onChangeText={setPhone}
+                                autoCapitalize="none"
+                                maxLength={15}
+                            />
+                        </View>
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>PASSWORD</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter password"
-                            placeholderTextColor={Colors.text.tertiary}
-                            secureTextEntry
-                            value={password}
-                            onChangeText={setPassword}
-                            autoCapitalize="none"
-                        />
+                        <Text style={styles.label}>Password</Text>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your password"
+                                placeholderTextColor={Colors.text.tertiary}
+                                secureTextEntry
+                                value={password}
+                                onChangeText={setPassword}
+                                autoCapitalize="none"
+                            />
+                        </View>
                     </View>
 
                     <TouchableOpacity
@@ -94,24 +104,27 @@ export const LoginScreen = ({ navigation }) => {
                         )}
                     </TouchableOpacity>
 
-                    {/* Development Quick Login */}
+                    {/* Development Credentials */}
                     <View style={styles.devHelper}>
-                        <Text style={styles.devHelperTitle}>Development Credentials:</Text>
-                        <Text style={styles.devHelperText}>
-                            Driver: +919111111001 / driver123
-                        </Text>
-                        <Text style={styles.devHelperText}>
-                            Supervisor: +919000000001 / supervisor123
-                        </Text>
+                        <Text style={styles.devHelperTitle}>Test Credentials</Text>
+                        <View style={styles.devCredential}>
+                            <Text style={styles.devLabel}>Driver:</Text>
+                            <Text style={styles.devValue}>+919111111001 / driver123</Text>
+                        </View>
+                        <View style={styles.devCredential}>
+                            <Text style={styles.devLabel}>Supervisor:</Text>
+                            <Text style={styles.devValue}>+919000000001 / supervisor123</Text>
+                        </View>
                     </View>
                 </View>
+            </View>
 
-                {/* Footer */}
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>
-                        SpeedWatch v1.0 • Phase 2 • SAIL Project
-                    </Text>
-                </View>
+            {/* Footer */}
+            <View style={styles.footer}>
+                <Text style={styles.footerText}>
+                    Powered by SAIL • Steel Authority of India Limited
+                </Text>
+                <Text style={styles.version}>Version 1.0.0 • Phase 3</Text>
             </View>
         </KeyboardAvoidingView>
     );
@@ -122,76 +135,120 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: Colors.background.primary,
     },
-    content: {
-        flex: 1,
-        paddingHorizontal: Spacing.xl,
-        paddingTop: Spacing.xxl * 2,
-    },
     header: {
+        backgroundColor: Colors.sail.navy,
+        paddingTop: 60,
+        paddingBottom: 30,
+        paddingHorizontal: 24,
         alignItems: 'center',
-        marginBottom: Spacing.xxl * 2,
     },
-    titleContainer: {
+    logoContainer: {
+        marginBottom: 16,
+    },
+    logoCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: Colors.text.inverse,
         alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 3,
+        borderColor: Colors.sail.gold,
+    },
+    logoText: {
+        fontFamily: Typography.sans.family,
+        fontSize: 24,
+        fontWeight: Typography.sans.weights.heavy,
+        color: Colors.sail.navy,
+        letterSpacing: 2,
     },
     title: {
         fontFamily: Typography.sans.family,
-        fontSize: 48,
+        fontSize: Typography.sans.sizes.title,
         fontWeight: Typography.sans.weights.bold,
-        color: Colors.text.primary,
-        letterSpacing: 2,
-    },
-    titleUnderline: {
-        width: 120,
-        height: 4,
-        backgroundColor: Colors.status.safe,
-        marginTop: Spacing.sm,
+        color: Colors.text.inverse,
+        letterSpacing: 1,
+        marginBottom: 8,
     },
     subtitle: {
         fontFamily: Typography.sans.family,
-        fontSize: Typography.sans.sizes.body,
-        color: Colors.text.secondary,
-        marginTop: Spacing.md,
+        fontSize: Typography.sans.sizes.caption,
+        color: Colors.sail.lightBlue,
         textAlign: 'center',
+        marginBottom: 12,
+    },
+    divider: {
+        width: 60,
+        height: 3,
+        backgroundColor: Colors.sail.gold,
+        marginVertical: 8,
     },
     organization: {
-        fontFamily: Typography.mono.family,
+        fontFamily: Typography.sans.family,
         fontSize: Typography.sans.sizes.caption,
-        color: Colors.text.tertiary,
-        marginTop: Spacing.xs,
-        letterSpacing: 1,
+        color: Colors.sail.lightBlue,
+        fontWeight: Typography.sans.weights.semibold,
+        letterSpacing: 1.5,
     },
-    form: {
+    formContainer: {
         flex: 1,
+        paddingHorizontal: 24,
+        paddingTop: 32,
+    },
+    formCard: {
+        backgroundColor: Colors.background.card,
+        borderRadius: 12,
+        padding: 24,
+        shadowColor: Colors.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: Colors.border,
+    },
+    formTitle: {
+        fontFamily: Typography.sans.family,
+        fontSize: Typography.sans.sizes.heading,
+        fontWeight: Typography.sans.weights.bold,
+        color: Colors.sail.navy,
+        marginBottom: 24,
     },
     inputGroup: {
-        marginBottom: Spacing.lg,
+        marginBottom: 20,
     },
     label: {
         fontFamily: Typography.sans.family,
-        fontSize: Typography.sans.sizes.small,
+        fontSize: Typography.sans.sizes.caption,
         fontWeight: Typography.sans.weights.semibold,
         color: Colors.text.secondary,
-        marginBottom: Spacing.sm,
+        marginBottom: 8,
         letterSpacing: 0.5,
     },
-    input: {
-        backgroundColor: Colors.background.secondary,
-        borderWidth: 1,
+    inputWrapper: {
+        borderWidth: 2,
         borderColor: Colors.border,
         borderRadius: 8,
-        paddingVertical: Spacing.md,
-        paddingHorizontal: Spacing.md,
-        fontFamily: Typography.mono.family,
+        backgroundColor: Colors.background.secondary,
+    },
+    input: {
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        fontFamily: Typography.sans.family,
         fontSize: Typography.sans.sizes.body,
         color: Colors.text.primary,
     },
     loginButton: {
-        backgroundColor: Colors.status.safe,
+        backgroundColor: Colors.sail.blue,
         borderRadius: 8,
-        paddingVertical: Spacing.md + 2,
+        paddingVertical: 16,
         alignItems: 'center',
-        marginTop: Spacing.lg,
+        marginTop: 8,
+        shadowColor: Colors.sail.blue,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     loginButtonDisabled: {
         opacity: 0.6,
@@ -201,36 +258,51 @@ const styles = StyleSheet.create({
         fontSize: Typography.sans.sizes.body,
         fontWeight: Typography.sans.weights.bold,
         color: Colors.text.inverse,
-        letterSpacing: 1,
+        letterSpacing: 1.5,
     },
     devHelper: {
-        marginTop: Spacing.xl,
-        padding: Spacing.md,
-        backgroundColor: Colors.background.secondary,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: Colors.border,
+        marginTop: 24,
+        paddingTop: 20,
+        borderTopWidth: 1,
+        borderTopColor: Colors.border,
     },
     devHelperTitle: {
         fontFamily: Typography.sans.family,
         fontSize: Typography.sans.sizes.small,
         fontWeight: Typography.sans.weights.semibold,
         color: Colors.text.tertiary,
-        marginBottom: Spacing.xs,
+        marginBottom: 12,
     },
-    devHelperText: {
+    devCredential: {
+        flexDirection: 'row',
+        marginBottom: 8,
+    },
+    devLabel: {
+        fontFamily: Typography.mono.family,
+        fontSize: Typography.sans.sizes.small,
+        color: Colors.text.tertiary,
+        width: 100,
+    },
+    devValue: {
         fontFamily: Typography.mono.family,
         fontSize: Typography.sans.sizes.small,
         color: Colors.text.secondary,
-        marginTop: Spacing.xs,
+        flex: 1,
     },
     footer: {
+        paddingVertical: 20,
         alignItems: 'center',
-        paddingVertical: Spacing.lg,
     },
     footerText: {
         fontFamily: Typography.sans.family,
         fontSize: Typography.sans.sizes.small,
         color: Colors.text.tertiary,
+        textAlign: 'center',
+    },
+    version: {
+        fontFamily: Typography.sans.family,
+        fontSize: Typography.sans.sizes.small,
+        color: Colors.text.tertiary,
+        marginTop: 4,
     },
 });

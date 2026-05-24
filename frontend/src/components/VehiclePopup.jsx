@@ -1,12 +1,12 @@
-import { useState as useState2 } from 'react'
-import { useDashboardStore as useDS } from '../store/dashboardStore'
+import React, { useState } from 'react'
+import { useDashboardStore } from '../store/dashboardStore'
 
 export default function VehiclePopup({ sendWsMessage }) {
-    const { selectedVehicleId, vehiclePositions, violations, setSelectedVehicle } = useDS()
-    const [tab, setTab2] = useState2('info')   // 'info' | 'voice'
-    const [voiceText, setVoiceText] = useState2('')
-    const [voiceSent, setVoiceSent] = useState2(false)
-    const [listening, setListening] = useState2(false)
+    const { selectedVehicleId, vehiclePositions, violations, setSelectedVehicle } = useDashboardStore()
+    const [tab, setTab] = useState('info')    // 'info' | 'voice'
+    const [voiceText, setVoiceText] = useState('')
+    const [voiceSent, setVoiceSent] = useState(false)
+    const [listening, setListening] = useState(false)
 
     if (!selectedVehicleId) return null
     const vehicle = vehiclePositions[selectedVehicleId]
@@ -15,11 +15,12 @@ export default function VehiclePopup({ sendWsMessage }) {
     const vViolations = violations.filter((v) => v.vehicle_id === selectedVehicleId)
     const todayPenalty = vViolations.reduce((s, v) => s + (v.penalty_amount || 0), 0)
     const speed = Math.round(vehicle.speed || 0)
-
     const color = vehicle.status === 'violation' ? 'var(--red)'
-        : vehicle.status === 'warning' ? 'var(--amber)' : 'var(--green)'
+        : vehicle.status === 'warning' ? 'var(--amber)'
+            : 'var(--green)'
     const statusLabel = vehicle.status === 'violation' ? 'VIOLATION'
-        : vehicle.status === 'warning' ? 'WARNING' : 'SAFE'
+        : vehicle.status === 'warning' ? 'WARNING'
+            : 'SAFE'
 
     const handleSendVoice = () => {
         if (!voiceText.trim()) return
@@ -42,10 +43,13 @@ export default function VehiclePopup({ sendWsMessage }) {
     }
 
     return (
+        // overlay: covers the map but passes pointer events through to the map
+        // clicking outside the popup card closes it
         <div style={VP.overlay} onClick={() => setSelectedVehicle(null)}>
             <div style={VP.popup} onClick={(e) => e.stopPropagation()} className="anim-fadein">
-                {/* Header */}
-                <div style={VP.header}>
+
+                {/* Header — coloured accent bar + speed readout */}
+                <div style={{ ...VP.header, borderTop: `3px solid ${color}` }}>
                     <div style={VP.headerLeft}>
                         <div style={VP.speedCircle}>
                             <span style={{ ...VP.speedNum, color }}>{speed}</span>
@@ -53,40 +57,67 @@ export default function VehiclePopup({ sendWsMessage }) {
                         </div>
                         <div>
                             <div style={VP.vehicleId}>{selectedVehicleId}</div>
-                            <span style={{ ...VP.statusBadge, background: `${color}22`, color, border: `1px solid ${color}55` }}>{statusLabel}</span>
+                            <span style={{
+                                ...VP.statusBadge,
+                                background: `${color}22`,
+                                color,
+                                border: `1px solid ${color}55`,
+                            }}>
+                                {statusLabel}
+                            </span>
                         </div>
                     </div>
-                    <button style={VP.closeBtn} onClick={() => setSelectedVehicle(null)}>✕</button>
+                    <button style={VP.closeBtn} onClick={() => setSelectedVehicle(null)} title="Close">✕</button>
                 </div>
 
                 {/* Tabs */}
                 <div style={VP.tabs}>
-                    {['info', 'voice'].map((t) => (
+                    {[
+                        { id: 'info', label: 'Driver Info' },
+                        { id: 'voice', label: '🎤 Voice Cmd' },
+                    ].map((t) => (
                         <button
-                            key={t}
-                            style={{ ...VP.tabBtn, ...(tab === t ? VP.tabBtnActive : {}) }}
-                            onClick={() => setTab2(t)}
+                            key={t.id}
+                            style={{ ...VP.tabBtn, ...(tab === t.id ? VP.tabBtnActive : {}) }}
+                            onClick={() => setTab(t.id)}
                         >
-                            {t === 'info' ? 'Driver Info' : '🎤 Voice Cmd'}
+                            {t.label}
                         </button>
                     ))}
                 </div>
 
+                {/* Info tab */}
                 {tab === 'info' && (
                     <div style={VP.body}>
-                        <DataRow label="Driver" value={vehicle.driverName} />
-                        <DataRow label="Status" value={statusLabel} valueColor={color} />
-                        <DataRow label="Violations (session)" value={vViolations.length} valueColor={vViolations.length > 0 ? 'var(--red)' : undefined} />
-                        <DataRow label="Penalty (session)" value={`₹ ${todayPenalty.toLocaleString('en-IN')}`} valueColor={todayPenalty > 0 ? 'var(--red)' : undefined} />
-                        {vehicle.tripId && <DataRow label="Trip ID" value={vehicle.tripId.substring(0, 8) + '…'} />}
-                        <DataRow label="Last update" value={`${Math.round((Date.now() - vehicle.lastUpdate) / 1000)}s ago`} />
+                        <DataRow label="Driver" value={vehicle.driverName || 'Unknown'} />
+                        <DataRow label="Current status" value={statusLabel} valueColor={color} />
+                        <DataRow
+                            label="Violations (session)"
+                            value={vViolations.length}
+                            valueColor={vViolations.length > 0 ? 'var(--red)' : undefined}
+                        />
+                        <DataRow
+                            label="Penalty (session)"
+                            value={`₹ ${todayPenalty.toLocaleString('en-IN')}`}
+                            valueColor={todayPenalty > 0 ? 'var(--red)' : undefined}
+                        />
+                        {vehicle.tripId && (
+                            <DataRow label="Trip ID" value={vehicle.tripId.substring(0, 8) + '…'} />
+                        )}
+                        <DataRow
+                            label="Last update"
+                            value={`${Math.round((Date.now() - vehicle.lastUpdate) / 1000)}s ago`}
+                        />
                     </div>
                 )}
 
+                {/* Voice command tab */}
                 {tab === 'voice' && (
                     <div style={VP.voiceBody}>
                         <div style={VP.voiceTo}>
-                            To: <span style={{ color: 'var(--text-0)', fontFamily: 'var(--font-mono)' }}>{selectedVehicleId}</span> — {vehicle.driverName}
+                            Sending to: <span style={{ color: 'var(--text-0)', fontFamily: 'var(--font-mono)' }}>
+                                {vehicle.driverName || selectedVehicleId}
+                            </span>
                         </div>
                         <textarea
                             style={VP.voiceTextarea}
@@ -96,12 +127,8 @@ export default function VehiclePopup({ sendWsMessage }) {
                             rows={3}
                         />
                         <div style={VP.voiceBtns}>
-                            <button
-                                className="btn btn-amber"
-                                onClick={handleSpeak}
-                                style={{ flex: 1 }}
-                            >
-                                {listening ? '● RECORDING...' : '🎤 SPEAK'}
+                            <button className="btn btn-amber" onClick={handleSpeak} style={{ flex: 1 }}>
+                                {listening ? '● RECORDING…' : '🎤 SPEAK'}
                             </button>
                             <button
                                 className="btn btn-blue"
@@ -138,14 +165,14 @@ const VP = {
         position: 'absolute',
         inset: 0,
         zIndex: 900,
-        pointerEvents: 'none',
+        pointerEvents: 'none',      // pass clicks to map underneath
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'flex-end',
-        padding: '16px',
+        padding: '12px',
     },
     popup: {
-        pointerEvents: 'all',
+        pointerEvents: 'all',       // but the card itself is clickable
         background: 'var(--bg-2)',
         border: '1px solid var(--border-2)',
         borderRadius: '8px',
@@ -154,9 +181,7 @@ const VP = {
         overflow: 'hidden',
     },
     header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '14px 16px',
         background: 'var(--bg-3)',
         borderBottom: '1px solid var(--border-1)',
@@ -164,67 +189,56 @@ const VP = {
     headerLeft: { display: 'flex', alignItems: 'center', gap: '12px' },
     speedCircle: {
         width: '52px', height: '52px',
-        background: 'var(--bg-1)',
-        borderRadius: '50%',
+        background: 'var(--bg-1)', borderRadius: '50%',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        border: '1px solid var(--border-2)',
-        flexShrink: 0,
+        border: '1px solid var(--border-2)', flexShrink: 0,
     },
     speedNum: { fontFamily: 'var(--font-mono)', fontSize: '16px', lineHeight: 1 },
     speedUnit: { fontSize: '8px', color: 'var(--text-3)', letterSpacing: '0.5px', marginTop: '1px' },
     vehicleId: { fontFamily: 'var(--font-mono)', fontSize: '16px', color: 'var(--text-0)', letterSpacing: '1px' },
     statusBadge: {
-        display: 'inline-block',
-        fontSize: '9px', fontWeight: 700, letterSpacing: '1px',
-        padding: '2px 7px', borderRadius: '3px',
+        display: 'inline-block', fontSize: '9px', fontWeight: 700,
+        letterSpacing: '1px', padding: '2px 7px', borderRadius: '3px',
         fontFamily: 'var(--font-hmi)', textTransform: 'uppercase',
     },
     closeBtn: {
-        background: 'transparent', border: 'none', color: 'var(--text-3)',
-        fontSize: '14px', cursor: 'pointer', padding: '4px', lineHeight: 1,
+        background: 'transparent', border: 'none',
+        color: 'var(--text-3)', fontSize: '14px', cursor: 'pointer',
+        padding: '4px', lineHeight: 1,
     },
-    tabs: {
-        display: 'flex',
-        borderBottom: '1px solid var(--border-1)',
-    },
+    tabs: { display: 'flex', borderBottom: '1px solid var(--border-1)' },
     tabBtn: {
         flex: 1, background: 'transparent', border: 'none',
         color: 'var(--text-3)', padding: '9px 8px',
-        fontSize: '11px', fontWeight: 700,
-        letterSpacing: '0.8px', cursor: 'pointer',
-        fontFamily: 'var(--font-hmi)',
-        borderBottom: '2px solid transparent',
-        transition: 'all 0.15s',
+        fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px',
+        cursor: 'pointer', fontFamily: 'var(--font-hmi)',
+        borderBottom: '2px solid transparent', transition: 'all 0.15s',
     },
     tabBtnActive: { color: 'var(--blue)', borderBottom: '2px solid var(--blue)' },
     body: { padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' },
-    dataRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--border-0)' },
-    dataLabel: { fontSize: '10px', fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.8px', textTransform: 'uppercase' },
+    dataRow: {
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '4px 0', borderBottom: '1px solid var(--border-0)',
+    },
+    dataLabel: {
+        fontSize: '10px', fontWeight: 700, color: 'var(--text-3)',
+        letterSpacing: '0.8px', textTransform: 'uppercase',
+    },
     dataValue: { fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-1)' },
     voiceBody: { padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' },
     voiceTo: { fontSize: '11px', color: 'var(--text-3)', fontFamily: 'var(--font-hmi)' },
     voiceTextarea: {
-        background: 'var(--bg-1)',
-        border: '1px solid var(--border-2)',
-        borderRadius: '4px',
-        color: 'var(--text-0)',
-        padding: '10px',
-        fontSize: '13px',
-        fontFamily: 'var(--font-hmi)',
-        resize: 'none',
-        outline: 'none',
-        width: '100%',
-        lineHeight: 1.5,
+        background: 'var(--bg-1)', border: '1px solid var(--border-2)',
+        borderRadius: '4px', color: 'var(--text-0)',
+        padding: '10px', fontSize: '13px',
+        fontFamily: 'var(--font-hmi)', resize: 'none', outline: 'none',
+        width: '100%', lineHeight: 1.5,
     },
     voiceBtns: { display: 'flex', gap: '8px' },
     sentConfirm: {
-        background: 'var(--green-dim)',
-        border: '1px solid rgba(34,197,94,0.3)',
-        borderRadius: '4px',
-        padding: '8px 10px',
-        fontSize: '11px',
-        color: 'var(--green)',
-        fontFamily: 'var(--font-hmi)',
+        background: 'var(--green-dim)', border: '1px solid rgba(34,197,94,0.3)',
+        borderRadius: '4px', padding: '8px 10px',
+        fontSize: '11px', color: 'var(--green)', fontFamily: 'var(--font-hmi)',
     },
 }

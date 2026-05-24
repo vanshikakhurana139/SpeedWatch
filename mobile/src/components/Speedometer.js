@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, Line, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Line, Text as SvgText } from 'react-native-svg';
 import { Colors, Typography, Spacing } from '../theme';
 
 export const Speedometer = ({ speed, limit, status }) => {
@@ -28,7 +28,7 @@ export const Speedometer = ({ speed, limit, status }) => {
         };
     };
 
-    const createArc = (start, end, color) => {
+    const createArc = (start, end) => {
         const startPoint = polarToCartesian(start);
         const endPoint = polarToCartesian(end);
         const largeArc = end - start > 180 ? 1 : 0;
@@ -43,10 +43,10 @@ export const Speedometer = ({ speed, limit, status }) => {
     return (
         <View style={styles.container}>
             <Svg width={size} height={size}>
-                {/* Background arc (full range in dark gray) */}
+                {/* Background arc (full range in light blue background) */}
                 <Path
-                    d={createArc(startAngle, endAngle, Colors.border)}
-                    stroke={Colors.border}
+                    d={createArc(startAngle, endAngle)}
+                    stroke={Colors.sail.lightBlue}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeLinecap="round"
@@ -54,7 +54,7 @@ export const Speedometer = ({ speed, limit, status }) => {
 
                 {/* Safe zone (green: 0-40) */}
                 <Path
-                    d={createArc(startAngle, safeZoneEnd, Colors.status.safe)}
+                    d={createArc(startAngle, safeZoneEnd)}
                     stroke={Colors.status.safe}
                     strokeWidth={strokeWidth}
                     fill="none"
@@ -64,7 +64,7 @@ export const Speedometer = ({ speed, limit, status }) => {
 
                 {/* Warning zone (amber: 40-limit) */}
                 <Path
-                    d={createArc(safeZoneEnd, warningZoneEnd, Colors.status.warning)}
+                    d={createArc(safeZoneEnd, warningZoneEnd)}
                     stroke={Colors.status.warning}
                     strokeWidth={strokeWidth}
                     fill="none"
@@ -74,7 +74,7 @@ export const Speedometer = ({ speed, limit, status }) => {
 
                 {/* Violation zone (red: limit-120) */}
                 <Path
-                    d={createArc(warningZoneEnd, endAngle, Colors.status.violation)}
+                    d={createArc(warningZoneEnd, endAngle)}
                     stroke={Colors.status.violation}
                     strokeWidth={strokeWidth}
                     fill="none"
@@ -85,11 +85,7 @@ export const Speedometer = ({ speed, limit, status }) => {
                 {/* Current speed arc (highlighted) */}
                 {speed > 0 && (
                     <Path
-                        d={createArc(startAngle, speedAngle,
-                            status === 'violation' ? Colors.status.violation :
-                                status === 'warning' ? Colors.status.warning :
-                                    Colors.status.safe
-                        )}
+                        d={createArc(startAngle, speedAngle)}
                         stroke={
                             status === 'violation' ? Colors.status.violation :
                                 status === 'warning' ? Colors.status.warning :
@@ -181,14 +177,14 @@ const styles = StyleSheet.create({
     speedText: {
         fontFamily: Typography.mono.family,
         fontSize: Typography.mono.sizes.huge,
-        color: Colors.text.primary,
+        color: Colors.sail.navy,  // SAIL navy for speed
         fontWeight: '700',
         letterSpacing: -2,
     },
     unitText: {
         fontFamily: Typography.mono.family,
         fontSize: Typography.mono.sizes.tiny,
-        color: Colors.text.tertiary,
+        color: Colors.text.secondary,
         marginTop: -8,
     },
     limitIndicator: {
@@ -206,7 +202,7 @@ const styles = StyleSheet.create({
     limitValue: {
         fontFamily: Typography.mono.family,
         fontSize: Typography.mono.sizes.medium,
-        color: Colors.text.secondary,
+        color: Colors.sail.blue,  // SAIL blue for limit
         fontWeight: '700',
     },
 });

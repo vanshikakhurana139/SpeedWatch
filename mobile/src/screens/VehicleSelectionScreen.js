@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
         minWidth: 100,
     },
     loadTypeCardSelected: {
-        borderColor: Colors.accent.blue,
-        backgroundColor: `${Colors.accent.blue}10`,
+        borderColor: Colors.sail.blue,
+        backgroundColor: `${Colors.sail.blue}10`,
     },
     loadTypeIcon: {
         fontSize: 24,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
         color: Colors.text.secondary,
     },
     loadTypeLabelSelected: {
-        color: Colors.accent.blue,
+        color: Colors.sail.blue,
         fontWeight: Typography.sans.weights.bold,
     },
     loadTypeHint: {

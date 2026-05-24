@@ -1,38 +1,48 @@
-// SpeedWatch Industrial Design System
-// NO gradients, NO neon colors, NO generic AI aesthetics
-
+// SAIL Professional Theme - Inspired by SAIL Steel Authority
 export const Colors = {
-    // Base Industrial Palette
-    background: {
-        primary: '#1C1C1E',      // Matte dark charcoal (main screen background)
-        secondary: '#2C2C2E',    // Slightly lighter for cards
-        elevated: '#3A3A3C',     // Raised elements
+    // SAIL Brand Colors
+    sail: {
+        navy: '#003A70',        // Primary SAIL blue
+        blue: '#0066CC',        // Secondary blue
+        gold: '#FFB81C',        // Accent gold
+        lightBlue: '#E6F2FF',   // Very light blue background
     },
 
-    // Status Colors (Safety System)
+    // Backgrounds
+    background: {
+        primary: '#FFFFFF',      // White base
+        secondary: '#F5F7FA',    // Light gray
+        card: '#FFFFFF',
+        elevated: '#FFFFFF',
+        overlay: 'rgba(0, 58, 112, 0.95)', // Navy overlay
+    },
+
+    // SAIL Status Colors
     status: {
-        safe: '#34C759',         // Green - under 40 km/h
-        warning: '#FF9500',      // Amber - 40-50 km/h
-        violation: '#FF3B30',    // Red - over 50 km/h
-        critical: '#C00000',     // Dark red - emergency
+        safe: '#10B981',         // Professional green
+        warning: '#F59E0B',      // Amber
+        violation: '#EF4444',    // Red
+        critical: '#DC2626',     // Dark red
+    },
+
+    // Text
+    text: {
+        primary: '#1A1A1A',      // Almost black
+        secondary: '#4A5568',    // Medium gray
+        tertiary: '#718096',     // Light gray
+        inverse: '#FFFFFF',      // White
+        sail: '#003A70',         // SAIL navy for emphasis
     },
 
     // UI Elements
-    text: {
-        primary: '#FFFFFF',
-        secondary: '#EBEBF5',
-        tertiary: '#98989D',
-        inverse: '#1C1C1E',
-    },
+    border: '#E2E8F0',         // Light border
+    divider: '#CBD5E0',        // Divider
+    shadow: 'rgba(0, 58, 112, 0.1)',
 
-    // Functional
-    border: '#48484A',
-    divider: '#38383A',
-    overlay: 'rgba(0, 0, 0, 0.85)',
-
-    // Industrial Accents (very subtle, no gradients)
-    accent: {
-        blue: '#0A84FF',        // Only for interactive elements
-        steel: '#8E8E93',       // Neutral metal tone
+    // Interactive
+    interactive: {
+        primary: '#0066CC',      // SAIL blue
+        hover: '#0052A3',        // Darker blue
+        disabled: '#CBD5E0',     // Gray
     },
 };
