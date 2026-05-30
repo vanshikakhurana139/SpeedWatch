@@ -8,7 +8,7 @@ const getApiBaseUrl = () => {
     // 3. It will look like: 192.168.1.xxx or 10.0.0.xxx
 
     // Example: If your computer IP is 192.168.1.100 and backend runs on port 8000:
-    return 'http://192.168.1.11:8000';  // ⚠️ CHANGE THIS TO YOUR IP
+    return 'http://10.54.241.96:8000';  // ⚠️ CHANGE THIS TO YOUR IP
 };
 
 export const API_CONFIG = {

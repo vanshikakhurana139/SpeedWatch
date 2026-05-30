@@ -42,13 +42,15 @@ async def start_trip(
 ):
     """Creates a new trip record. Returns trip_id for the mobile app to use."""
 
-    # Check if driver already has an active trip
-    result = await db.execute(
-        text("SELECT id FROM trips WHERE driver_id = :did AND status = 'active'"),
+    # Automatically complete any previous active trips for this driver
+    await db.execute(
+        text("""
+            UPDATE trips
+            SET status = 'completed', end_time = NOW()
+            WHERE driver_id = :did AND status = 'active'
+        """),
         {"did": current_user.id}
     )
-    if result.fetchone():
-        raise HTTPException(status_code=400, detail="Driver already has an active trip")
 
     trip_id = await db.execute(
         text("""
