@@ -9,7 +9,7 @@ import { useAuthStore } from '../store/authStore';
 import { LoginScreen } from '../screens/LoginScreen';
 import { VehicleSelectionScreen } from '../screens/VehicleSelectionScreen';
 import { ActiveTripScreen } from '../screens/ActiveTripScreen';
-
+import { TrainingScreen } from '../screens/TrainingScreen';
 const Stack = createStackNavigator();
 
 export const AppNavigator = () => {
@@ -48,6 +48,7 @@ export const AppNavigator = () => {
                     <>
                         <Stack.Screen name="VehicleSelection" component={VehicleSelectionScreen} />
                         <Stack.Screen name="ActiveTrip" component={ActiveTripScreen} />
+                        <Stack.Screen name="Training" component={TrainingScreen} />
                     </>
                 )}
             </Stack.Navigator>

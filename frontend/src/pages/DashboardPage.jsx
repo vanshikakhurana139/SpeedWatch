@@ -6,8 +6,10 @@ import LiveMap from '../components/LiveMap'
 import RightPanel from '../components/RightPanel'
 import VehiclePopup from '../components/VehiclePopup'
 import SosPanel from '../components/SosPanel'
+import SecondHitAlert from '../components/SecondHitAlert'
 import GeofenceForm from '../components/GeofenceForm'
 import ReportsPage from './ReportsPage'
+import LeaderboardPage from './LeaderboardPage'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useDashboardStore } from '../store/dashboardStore'
 
@@ -33,6 +35,7 @@ export default function DashboardPage() {
                     {/* SOS floats above the map inside the map area */}
                     <div style={S.mapWrapper}>
                         <SosPanel />
+                        <SecondHitAlert />
                         <LiveMap onDrawGeofence={handleGeofenceDrawn} />
                         {selectedVehicleId && (
                             <VehiclePopup sendWsMessage={sendMessage} />
@@ -51,7 +54,7 @@ export default function DashboardPage() {
 
             {activePage === 'leaderboard' && (
                 <div style={S.pageArea}>
-                    <LeaderboardPlaceholder />
+                    <LeaderboardPage />
                 </div>
             )}
 

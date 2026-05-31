@@ -136,7 +136,31 @@ async def log_violation(
         "lng": request.lng
     })
     await redis.publish("speedwatch:events", violation_event)
-
+# ─────────────────────────────────────────────────────────────────
+    # PHASE 4: Predictive Second-Hit Alert
+    # If this driver has 3+ violations in last 10 minutes, warn supervisors
+    # ─────────────────────────────────────────────────────────────────
+    ten_mins_ago = __import__('datetime').datetime.utcnow() - __import__('datetime').timedelta(minutes=10)
+    recent_count_result = await db.execute(
+        text("""
+            SELECT COUNT(*) as cnt FROM violations
+            WHERE driver_id = :did AND timestamp >= :ten_ago
+        """),
+        {"did": current_user.id, "ten_ago": ten_mins_ago}
+    )
+    recent_count = recent_count_result.scalar() or 0
+    
+    if recent_count >= 3:
+        # Broadcast second-hit warning to all supervisors
+        second_hit_event = json.dumps({
+            "type": "second_hit_warning",
+            "vehicle_id": request.vehicle_id,
+            "driver_id": str(current_user.id),
+            "driver_name": current_user.name,
+            "violation_count_10min": recent_count,
+            "message": f"WARNING: {recent_count} violations in last 10 minutes!"
+        })
+        await redis.publish("speedwatch:events", second_hit_event)
     return {
         "violation_id": violation_id,
         "violation_number": violation_number,

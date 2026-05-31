@@ -1,3 +1,4 @@
+import { useTripStore } from '../store/tripStore';
 import React, { useEffect, useState } from 'react';
 import {
     View,
@@ -10,7 +11,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing } from '../theme';
-import { useTripStore } from '../store/tripStore';
 import { vehiclesApi } from '../api/vehicles';
 import { geofencesApi } from '../api/geofences';
 import { cacheGeofences } from '../services/database';
@@ -60,7 +60,16 @@ export const VehicleSelectionScreen = ({ navigation }) => {
 
         setVehicle(selectedVehicle);
         setLoadType(selectedLoadType);
-        navigation.replace('ActiveTrip');
+
+        // PHASE 4: Check if driver needs training (5+ violations today)
+        // violationsToday is from tripStore
+        const { violationsToday } = useTripStore.getState();
+        if (violationsToday >= 5) {
+            // Driver is LOCKED OUT — must complete training
+            navigation.replace('Training');
+        } else {
+            navigation.replace('ActiveTrip');
+        }
     };
 
     const renderVehicleItem = ({ item }) => {

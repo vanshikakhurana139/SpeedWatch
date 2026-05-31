@@ -1,3 +1,4 @@
+import { VoiceCommandOverlay } from '../components/VoiceCommandOverlay';
 import React, { useEffect, useState } from 'react';
 import {
     View,
@@ -34,6 +35,7 @@ export const ActiveTripScreen = ({ navigation }) => {
 
     const [tripStarted, setTripStarted] = useState(false);
     const [tripDuration, setTripDuration] = useState(0);
+    const [supervisorMessage, setSupervisorMessage] = useState(null);
 
     useEffect(() => {
         // Trip duration timer
@@ -181,6 +183,11 @@ export const ActiveTripScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Voice Command Overlay — shown when supervisor sends a message */}
+            <VoiceCommandOverlay
+                message={supervisorMessage}
+                onAcknowledge={() => setSupervisorMessage(null)}
+            />
             {/* SOS Button */}
             <TouchableOpacity style={styles.sosButton} onPress={handleSOS}>
                 <Text style={styles.sosButtonText}>SOS</Text>

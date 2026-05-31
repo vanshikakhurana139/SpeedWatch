@@ -17,8 +17,8 @@ export function useWebSocket() {
         setWsConnected,
         incrementHourlyCount,
         addTickerMessage,
+        addSecondHitWarning,
     } = useDashboardStore()
-
     // Route incoming WebSocket messages to the correct store action
     const handleMessage = useCallback((event) => {
         try {
@@ -30,7 +30,19 @@ export function useWebSocket() {
                     // Vehicle moved — update its marker on the map
                     updateVehiclePosition(data)
                     break
-
+                case 'second_hit_warning':
+                    // A driver has 3+ violations in 10 mins — high danger
+                    useDashboardStore.getState().addSecondHitWarning(data);
+                    useDashboardStore.getState().addTickerMessage(
+                        `⚠ SECOND-HIT: ${data.driver_name} has ${data.violation_count_10min} violations in 10 min!`
+                    );
+                    break;
+                case 'second_hit_warning':
+                    addSecondHitWarning(data);
+                    addTickerMessage(
+                        `⚠ SECOND-HIT WARNING: ${data.driver_name} — ${data.violation_count_10min} violations in 10 min!`
+                    );
+                    break;
                 case 'violation':
                     // Speed violation occurred
                     addViolation(data)

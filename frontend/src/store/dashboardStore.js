@@ -31,6 +31,21 @@ export const useDashboardStore = create((set, get) => ({
             delete next[vehicleId]
             return { vehiclePositions: next }
         }),
+    // Phase 4: Second-hit warnings
+    secondHitWarnings: [],
+
+    addSecondHitWarning: (warning) =>
+        set((s) => ({
+            secondHitWarnings: [
+                { ...warning, _id: Date.now(), receivedAt: Date.now() },
+                ...s.secondHitWarnings,
+            ].slice(0, 10), // Keep last 10 warnings
+        })),
+
+    clearSecondHitWarning: (id) =>
+        set((s) => ({
+            secondHitWarnings: s.secondHitWarnings.filter(w => w._id !== id),
+        })),
 
     // ── Violations live feed ─────────────────────────────────────────────
     violations: [],
