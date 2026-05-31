@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { tripsApi } from '../api/trips';
 import { violationsApi } from '../api/violations';
+import { sosApi } from '../api/sos';
 import GPSService from '../services/gps';
 import AccelerometerService from '../services/accelerometer';
 import { getSpeedLimitForPosition } from '../services/geofenceChecker';
@@ -13,6 +15,8 @@ export const useTripStore = create((set, get) => ({
     currentTrip: null,
     currentVehicle: null,
     loadType: 'empty',
+    ws: null,
+    supervisorMessage: null,
 
     // Real-time data
     currentSpeed: 0,
@@ -37,6 +41,7 @@ export const useTripStore = create((set, get) => ({
     // Actions
     setVehicle: (vehicle) => set({ currentVehicle: vehicle }),
     setLoadType: (loadType) => set({ loadType }),
+    setSupervisorMessage: (message) => set({ supervisorMessage: message }),
 
     setGeofences: (geofences) => set({ geofences }),
 
@@ -64,6 +69,9 @@ export const useTripStore = create((set, get) => ({
             // Start accelerometer
             AccelerometerService.start(get().handleHarshDriving);
 
+            // Connect WebSocket
+            await get().connectWebSocket(data.trip_id);
+
             return true;
         } catch (error) {
             console.error('Error starting trip:', error);
@@ -80,6 +88,9 @@ export const useTripStore = create((set, get) => ({
             get().stopGPSTracking();
             AccelerometerService.stop();
 
+            // Disconnect WebSocket
+            get().disconnectWebSocket();
+
             // End trip on server
             const data = await tripsApi.endTrip(currentTrip.id);
 
@@ -88,6 +99,7 @@ export const useTripStore = create((set, get) => ({
                 isTracking: false,
                 currentSpeed: 0,
                 status: 'safe',
+                supervisorMessage: null,
             });
 
             return data;
@@ -247,6 +259,109 @@ export const useTripStore = create((set, get) => ({
             await sound.playAsync();
         } catch (error) {
             console.log('Error playing sound:', error);
+        }
+    },
+
+    connectWebSocket: async (tripId) => {
+        get().disconnectWebSocket();
+
+        try {
+            const token = await AsyncStorage.getItem('auth_token');
+            if (!token) {
+                console.error('No auth token found for WS connection');
+                return;
+            }
+
+            const { WS_CONFIG } = require('../config/api');
+            const wsUrl = `${WS_CONFIG.BASE_URL}${WS_CONFIG.ENDPOINTS.DRIVER}?token=${token}&trip_id=${tripId}`;
+            console.log('Driver WS connecting to:', wsUrl);
+
+            const ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('Driver WS connection established');
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('Driver WS received message:', data);
+
+                    if (data.type === 'voice_command') {
+                        set({ supervisorMessage: data.message });
+                    }
+                } catch (err) {
+                    console.error('Failed to parse driver WS message:', err);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('Driver WS error:', error);
+            };
+
+            ws.onclose = (event) => {
+                console.log('Driver WS connection closed:', event.code, event.reason);
+                // Auto-reconnect if tracking is still active
+                if (get().isTracking && get().currentTrip?.id === tripId) {
+                    console.log('Reconnecting Driver WS in 3 seconds...');
+                    setTimeout(() => {
+                        if (get().isTracking) {
+                            get().connectWebSocket(tripId);
+                        }
+                    }, 3000);
+                }
+            };
+
+            set({ ws });
+        } catch (error) {
+            console.error('Failed to initialize Driver WS connection:', error);
+        }
+    },
+
+    disconnectWebSocket: () => {
+        const { ws } = get();
+        if (ws) {
+            try {
+                ws.close();
+            } catch (err) {
+                console.error('Error closing Driver WS:', err);
+            }
+            set({ ws: null });
+        }
+    },
+
+    triggerSOS: async () => {
+        const { currentTrip, currentVehicle, currentLocation } = get();
+        if (!currentTrip || !currentVehicle) return false;
+
+        let lat = 0.0;
+        let lng = 0.0;
+        if (currentLocation) {
+            lat = currentLocation.lat;
+            lng = currentLocation.lng;
+        } else {
+            try {
+                const location = await GPSService.getCurrentLocation();
+                if (location) {
+                    lat = location.lat;
+                    lng = location.lng;
+                }
+            } catch (err) {
+                console.error('Failed to get fallback GPS location for SOS:', err);
+            }
+        }
+
+        try {
+            await sosApi.sendSOS({
+                vehicle_id: currentVehicle.id,
+                trip_id: currentTrip.id,
+                lat,
+                lng,
+            });
+            return true;
+        } catch (error) {
+            console.error('Error sending SOS:', error);
+            return false;
         }
     },
 }));

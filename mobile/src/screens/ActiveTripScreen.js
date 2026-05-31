@@ -31,11 +31,13 @@ export const ActiveTripScreen = ({ navigation }) => {
         todayPenalty,
         startTrip,
         endTrip,
+        supervisorMessage,
+        setSupervisorMessage,
+        triggerSOS,
     } = useTripStore();
 
     const [tripStarted, setTripStarted] = useState(false);
     const [tripDuration, setTripDuration] = useState(0);
-    const [supervisorMessage, setSupervisorMessage] = useState(null);
 
     useEffect(() => {
         // Trip duration timer
@@ -115,9 +117,13 @@ export const ActiveTripScreen = ({ navigation }) => {
                 {
                     text: 'Send SOS',
                     style: 'destructive',
-                    onPress: () => {
-                        // TODO: Implement SOS API call
-                        Alert.alert('SOS Sent', 'Emergency alert sent to supervisors');
+                    onPress: async () => {
+                        const success = await triggerSOS();
+                        if (success) {
+                            Alert.alert('SOS Sent', 'Emergency alert sent to supervisors');
+                        } else {
+                            Alert.alert('Error', 'Failed to send SOS. Please try again.');
+                        }
                     },
                 },
             ]
