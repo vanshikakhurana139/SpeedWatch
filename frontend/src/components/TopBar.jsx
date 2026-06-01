@@ -14,49 +14,58 @@ export default function TopBar() {
         return () => clearInterval(t)
     }, [])
 
-    const handleLogout = () => {
-        authApi.logout()
-        navigate('/login')
-    }
+    const handleLogout = () => { authApi.logout(); navigate('/login') }
 
-    // Build ticker from real violation messages — falls back to idle message
     const tickerText = tickerMessages.length > 0
-        ? tickerMessages.map((m) => `[${m.time}]  ${m.text}`).join('          ·          ')
-        : 'SpeedWatch monitoring system active — all channels nominal — SAIL RDCIS Ranchi'
+        ? tickerMessages.map(m => `[${m.time}]  ${m.text}`).join('     ·     ')
+        : 'SPEEDWATCH MONITORING ACTIVE  ·  ALL SYSTEMS NOMINAL  ·  SAIL RDCIS RANCHI  ·  INDUSTRIAL VEHICLE ENFORCEMENT'
 
     const activeCount = Object.keys(vehiclePositions).length
     const violationCount = Object.values(vehiclePositions).filter(v => v.status === 'violation').length
 
     const navItems = [
-        { id: 'dashboard', label: 'LIVE MAP' },
-        { id: 'reports', label: 'REPORTS' },
-        { id: 'leaderboard', label: 'LEADERBOARD' },
+        { id: 'dashboard', label: 'LIVE MAP', icon: '◉' },
+        { id: 'reports', label: 'REPORTS', icon: '≡' },
+        { id: 'leaderboard', label: 'RANKINGS', icon: '↑' },
     ]
 
     return (
         <div style={S.bar}>
-            {/* ── Brand ── */}
+            {/* Brand */}
             <div style={S.brand}>
-                <div style={S.brandDot} />
+                <div style={S.sailLogo}>
+                    <span style={S.sailText}>SAIL</span>
+                </div>
                 <div>
                     <div style={S.brandName}>SPEEDWATCH</div>
-                    <div style={S.brandSub}>SAIL · RDCIS · CONTROL ROOM</div>
+                    <div style={S.brandSub}>RDCIS · RANCHI</div>
+                </div>
+                <div style={{
+                    ...S.statusPill,
+                    background: wsConnected ? 'rgba(22,201,116,0.12)' : 'rgba(240,65,75,0.12)',
+                    border: `1px solid ${wsConnected ? 'rgba(22,201,116,0.3)' : 'rgba(240,65,75,0.3)'}`,
+                }}>
+                    <div style={{
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: wsConnected ? 'var(--green)' : 'var(--red)',
+                        animation: wsConnected ? 'glow-pulse 2s infinite' : 'none',
+                    }} />
+                    <span style={{ color: wsConnected ? 'var(--green)' : 'var(--red)', fontSize: 10, fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: 1 }}>
+                        {wsConnected ? 'LIVE' : 'OFFLINE'}
+                    </span>
                 </div>
             </div>
 
-            {/* ── Nav tabs ── */}
+            {/* Nav */}
             <nav style={S.nav}>
-                {navItems.map((item) => (
+                {navItems.map(item => (
                     <button
                         key={item.id}
-                        style={{
-                            ...S.navBtn,
-                            ...(activePage === item.id ? S.navBtnActive : {}),
-                        }}
+                        style={{ ...S.navBtn, ...(activePage === item.id ? S.navBtnActive : {}) }}
                         onClick={() => setActivePage(item.id)}
                     >
+                        <span style={{ fontSize: 11 }}>{item.icon}</span>
                         {item.label}
-                        {/* Badge: show violation count on the map tab */}
                         {item.id === 'dashboard' && violationCount > 0 && (
                             <span style={S.violationBadge}>{violationCount}</span>
                         )}
@@ -64,55 +73,51 @@ export default function TopBar() {
                 ))}
             </nav>
 
-            {/* ── Live ticker ── */}
+            {/* Ticker */}
             <div style={S.tickerWrap}>
-                <span style={S.liveTag}>LIVE</span>
                 <div style={S.tickerTrack}>
-                    {/* key={tickerText.length} forces the animation to restart on new message */}
-                    <span key={tickerText} style={S.tickerText}>{tickerText}</span>
+                    <span key={tickerText.length} style={S.tickerText}>{tickerText}</span>
                 </div>
             </div>
 
-            {/* ── Right: stats + status + clock + user ── */}
+            {/* Right */}
             <div style={S.right}>
-                {/* Mini KPIs */}
-                <div style={S.miniKpi}>
-                    <span style={S.miniKpiNum}>{activeCount}</span>
-                    <span style={S.miniKpiLabel}>Active</span>
-                </div>
-                <div style={S.miniKpiDivider} />
-                <div style={S.miniKpi}>
-                    <span style={{ ...S.miniKpiNum, color: violationCount > 0 ? 'var(--red)' : 'var(--text-2)' }}>
-                        {violationCount}
-                    </span>
-                    <span style={S.miniKpiLabel}>Violating</span>
-                </div>
-                <div style={S.miniKpiDivider} />
-
-                {/* WS connection indicator */}
-                <div style={S.connWrap}>
-                    <span style={{
-                        ...S.connDot,
-                        background: wsConnected ? 'var(--green)' : 'var(--red)',
-                        boxShadow: wsConnected ? '0 0 6px var(--green)' : 'none',
-                    }} />
-                    <span style={S.connLabel}>{wsConnected ? 'LIVE' : 'OFFLINE'}</span>
+                <div style={S.kpiRow}>
+                    <div style={S.miniKpi}>
+                        <span style={S.miniNum}>{activeCount}</span>
+                        <span style={S.miniLabel}>ACTIVE</span>
+                    </div>
+                    <div style={S.miniDivider} />
+                    <div style={S.miniKpi}>
+                        <span style={{ ...S.miniNum, color: violationCount > 0 ? 'var(--red)' : 'var(--text-2)' }}>
+                            {violationCount}
+                        </span>
+                        <span style={S.miniLabel}>OVER</span>
+                    </div>
+                    <div style={S.miniDivider} />
+                    <div style={S.miniKpi}>
+                        <span style={{ ...S.miniNum, color: violations.length > 0 ? 'var(--amber)' : 'var(--text-2)' }}>
+                            {violations.length}
+                        </span>
+                        <span style={S.miniLabel}>VIO</span>
+                    </div>
                 </div>
 
-                {/* HH:MM:SS clock */}
-                <span style={S.clock}>
-                    {time.toLocaleTimeString('en-IN', { hour12: false })}
-                </span>
+                <div style={S.clockBlock}>
+                    <span style={S.clock}>{time.toLocaleTimeString('en-IN', { hour12: false })}</span>
+                    <span style={S.clockDate}>{time.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                </div>
 
-                {/* Logged-in user */}
                 {user && (
                     <div style={S.userChip}>
-                        <span style={S.userName}>{user.name}</span>
-                        <span style={S.userRole}>{user.role?.toUpperCase()}</span>
+                        <div style={S.userAvatar}>{(user.name || 'S').charAt(0).toUpperCase()}</div>
+                        <div>
+                            <div style={S.userName}>{user.name}</div>
+                            <div style={S.userRole}>{(user.role || 'SUPERVISOR').toUpperCase()}</div>
+                        </div>
                     </div>
                 )}
 
-                {/* Logout */}
                 <button onClick={handleLogout} style={S.logoutBtn}>SIGN OUT</button>
             </div>
         </div>
@@ -128,120 +133,143 @@ const S = {
         alignItems: 'center',
         flexShrink: 0,
         zIndex: 200,
-        position: 'relative',
         overflow: 'hidden',
     },
     brand: {
-        display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '0 18px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '0 20px',
         borderRight: '1px solid var(--border-1)',
         height: '100%',
-        minWidth: '190px',
+        minWidth: 220,
         flexShrink: 0,
     },
-    brandDot: {
-        width: '8px', height: '8px', borderRadius: '50%',
-        background: 'var(--green)',
-        boxShadow: '0 0 8px var(--green)',
+    sailLogo: {
+        width: 38, height: 38, borderRadius: '50%',
+        background: 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: '2px solid var(--sail-gold)',
         flexShrink: 0,
-        animation: 'blink-dot 2.5s ease-in-out infinite',
+    },
+    sailText: {
+        fontFamily: 'var(--font-display)',
+        fontSize: 13, fontWeight: 700,
+        color: 'var(--sail-navy)',
+        letterSpacing: 1.5,
     },
     brandName: {
-        fontFamily: 'var(--font-mono)', fontSize: '13px',
-        color: 'var(--text-0)', letterSpacing: '2px',
+        fontFamily: 'var(--font-display)',
+        fontSize: 14, fontWeight: 700,
+        color: 'var(--text-0)',
+        letterSpacing: 2,
     },
     brandSub: {
-        fontSize: '8px', color: 'var(--text-3)', letterSpacing: '1px',
-        fontFamily: 'var(--font-hmi)', fontWeight: 700, textTransform: 'uppercase',
+        fontSize: 9, color: 'var(--text-3)',
+        letterSpacing: 1.5,
+        fontFamily: 'var(--font-display)',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+    },
+    statusPill: {
+        display: 'flex', alignItems: 'center', gap: 5,
+        padding: '3px 8px', borderRadius: 20,
+        marginLeft: 4,
     },
     nav: {
         display: 'flex', alignItems: 'center',
         height: '100%',
         borderRight: '1px solid var(--border-1)',
-        padding: '0 6px',
-        gap: '2px',
+        padding: '0 8px', gap: 2,
         flexShrink: 0,
     },
     navBtn: {
         background: 'transparent', border: 'none',
-        color: 'var(--text-2)', fontSize: '11px', fontWeight: 700,
-        letterSpacing: '1.2px', padding: '6px 14px',
-        borderRadius: '4px', cursor: 'pointer',
-        fontFamily: 'var(--font-hmi)',
+        color: 'var(--text-2)',
+        fontSize: 11, fontWeight: 700,
+        letterSpacing: 1.2,
+        padding: '6px 16px',
+        borderRadius: 'var(--r-md)',
+        cursor: 'pointer',
+        fontFamily: 'var(--font-display)',
         transition: 'all 0.15s',
-        display: 'flex', alignItems: 'center', gap: '6px',
-        height: '32px',
+        display: 'flex', alignItems: 'center', gap: 6,
+        height: 36,
         borderBottom: '2px solid transparent',
     },
     navBtnActive: {
         color: 'var(--blue)',
         borderBottom: '2px solid var(--blue)',
-        background: 'rgba(59,130,246,0.08)',
+        background: 'var(--blue-bg)',
     },
     violationBadge: {
         background: 'var(--red)',
         color: 'white',
-        fontSize: '9px', fontWeight: 700,
-        padding: '1px 5px', borderRadius: '8px',
+        fontSize: 9, fontWeight: 700,
+        padding: '1px 5px', borderRadius: 10,
         fontFamily: 'var(--font-mono)',
-        animation: 'blink-dot 1s infinite',
+        animation: 'blink 1s infinite',
     },
     tickerWrap: {
         flex: 1,
-        display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '0 14px',
-        overflow: 'hidden', height: '100%',
+        overflow: 'hidden',
+        height: '100%',
+        display: 'flex', alignItems: 'center',
+        padding: '0 16px',
+        borderRight: '1px solid var(--border-1)',
         minWidth: 0,
     },
-    liveTag: {
-        background: 'var(--red)', color: 'white',
-        fontSize: '9px', fontWeight: 700, padding: '2px 7px',
-        borderRadius: '2px', letterSpacing: '1px',
-        flexShrink: 0, fontFamily: 'var(--font-hmi)',
-    },
-    tickerTrack: { overflow: 'hidden', flex: 1 },
+    tickerTrack: { overflow: 'hidden', width: '100%' },
     tickerText: {
         display: 'inline-block',
-        color: 'var(--text-2)', fontSize: '11px',
-        fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
-        animation: 'ticker-scroll 60s linear infinite',
+        color: 'var(--text-3)',
+        fontSize: 10,
+        fontFamily: 'var(--font-mono)',
+        whiteSpace: 'nowrap',
+        letterSpacing: 0.5,
+        animation: 'ticker-scroll 80s linear infinite',
     },
     right: {
-        display: 'flex', alignItems: 'center', gap: '14px',
-        padding: '0 16px',
-        borderLeft: '1px solid var(--border-1)',
-        height: '100%', flexShrink: 0,
+        display: 'flex', alignItems: 'center', gap: 16,
+        padding: '0 20px',
+        height: '100%',
+        flexShrink: 0,
     },
-    miniKpi: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px' },
-    miniKpiNum: {
-        fontFamily: 'var(--font-mono)', fontSize: '15px',
-        color: 'var(--text-0)', lineHeight: 1,
-    },
-    miniKpiLabel: {
-        fontSize: '8px', fontWeight: 700, letterSpacing: '0.8px',
-        color: 'var(--text-3)', textTransform: 'uppercase',
-    },
-    miniKpiDivider: { width: '1px', height: '24px', background: 'var(--border-1)', flexShrink: 0 },
-    connWrap: { display: 'flex', alignItems: 'center', gap: '5px' },
-    connDot: { width: '7px', height: '7px', borderRadius: '50%', flexShrink: 0 },
-    connLabel: {
-        fontSize: '10px', fontWeight: 700, letterSpacing: '1px',
-        color: 'var(--text-3)', fontFamily: 'var(--font-hmi)',
-    },
-    clock: {
-        fontFamily: 'var(--font-mono)', fontSize: '13px',
-        color: 'var(--text-1)', letterSpacing: '1px', flexShrink: 0,
-    },
+    kpiRow: { display: 'flex', alignItems: 'center', gap: 12 },
+    miniKpi: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 },
+    miniNum: { fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--text-0)', lineHeight: 1 },
+    miniLabel: { fontSize: 8, fontWeight: 700, letterSpacing: 0.8, color: 'var(--text-3)', fontFamily: 'var(--font-display)' },
+    miniDivider: { width: 1, height: 24, background: 'var(--border-1)', flexShrink: 0 },
+    clockBlock: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
+    clock: { fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--text-0)', letterSpacing: 1 },
+    clockDate: { fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: 1 },
     userChip: {
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        background: 'var(--bg-3)',
+        border: '1px solid var(--border-1)',
+        borderRadius: 'var(--r-lg)',
+        padding: '5px 12px 5px 6px',
     },
-    userName: { fontSize: '11px', color: 'var(--text-1)', fontFamily: 'var(--font-hmi)', fontWeight: 600 },
-    userRole: { fontSize: '8px', color: 'var(--text-3)', letterSpacing: '1px', fontFamily: 'var(--font-hmi)', fontWeight: 700 },
+    userAvatar: {
+        width: 28, height: 28, borderRadius: '50%',
+        background: 'var(--blue-bg)',
+        border: '1px solid rgba(59,139,255,0.3)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: 'var(--font-display)',
+        fontSize: 12, fontWeight: 700,
+        color: 'var(--blue)',
+    },
+    userName: { fontSize: 12, color: 'var(--text-0)', fontFamily: 'var(--font-body)', fontWeight: 600 },
+    userRole: { fontSize: 9, color: 'var(--text-3)', letterSpacing: 1, fontFamily: 'var(--font-display)', fontWeight: 700 },
     logoutBtn: {
-        background: 'transparent', border: '1px solid var(--border-2)',
-        color: 'var(--text-3)', padding: '4px 10px', borderRadius: '4px',
-        fontSize: '10px', fontWeight: 700, letterSpacing: '0.5px',
-        cursor: 'pointer', fontFamily: 'var(--font-hmi)',
-        transition: 'all 0.15s', flexShrink: 0,
+        background: 'transparent',
+        border: '1px solid var(--border-2)',
+        color: 'var(--text-3)',
+        padding: '5px 12px',
+        borderRadius: 'var(--r-md)',
+        fontSize: 10, fontWeight: 700,
+        letterSpacing: 0.5,
+        cursor: 'pointer',
+        fontFamily: 'var(--font-display)',
+        transition: 'all 0.15s',
+        flexShrink: 0,
     },
 }

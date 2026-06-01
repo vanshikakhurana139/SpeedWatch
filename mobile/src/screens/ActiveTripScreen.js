@@ -15,6 +15,7 @@ import { useTripStore } from '../store/tripStore';
 import { Speedometer } from '../components/Speedometer';
 import { StatusBand } from '../components/StatusBand';
 import { MetricTile } from '../components/MetricTile';
+import apiClient from '../api/client';
 
 export const ActiveTripScreen = ({ navigation }) => {
     useKeepAwake(); // Keep screen awake during trip
@@ -38,6 +39,10 @@ export const ActiveTripScreen = ({ navigation }) => {
 
     const [tripStarted, setTripStarted] = useState(false);
     const [tripDuration, setTripDuration] = useState(0);
+
+    // Voice incident button
+    const [recording, setRecording] = useState(false);
+    const [incidentText, setIncidentText] = useState('');
 
     useEffect(() => {
         // Trip duration timer
@@ -187,23 +192,36 @@ export const ActiveTripScreen = ({ navigation }) => {
         );
     }
 
+    // In the tripStarted === true return:
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Voice Command Overlay — shown when supervisor sends a message */}
             <VoiceCommandOverlay
                 message={supervisorMessage}
                 onAcknowledge={() => setSupervisorMessage(null)}
             />
-            {/* SOS Button */}
+
+            {/* SOS — positioned absolutely */}
             <TouchableOpacity style={styles.sosButton} onPress={handleSOS}>
+                <Text style={styles.sosIcon}>🚨</Text>
                 <Text style={styles.sosButtonText}>SOS</Text>
             </TouchableOpacity>
 
             <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Header Info */}
-                <View style={styles.header}>
-                    <Text style={styles.headerLabel}>TRIP DURATION</Text>
-                    <Text style={styles.headerValue}>{formatDuration(tripDuration)}</Text>
+                {/* Duration header */}
+                <View style={styles.durationHeader}>
+                    <View style={styles.durationBlock}>
+                        <Text style={styles.durationLabel}>TRIP DURATION</Text>
+                        <Text style={styles.durationValue}>{formatDuration(tripDuration)}</Text>
+                    </View>
+                    <View style={styles.durationDivider} />
+                    <View style={styles.durationBlock}>
+                        <Text style={styles.durationLabel}>STATUS</Text>
+                        <Text style={[styles.statusChip, {
+                            color: status === 'violation' ? '#F0414B' : status === 'warning' ? '#F5A623' : '#16C974',
+                        }]}>
+                            {status.toUpperCase()}
+                        </Text>
+                    </View>
                 </View>
 
                 {/* Speedometer */}
@@ -211,51 +229,93 @@ export const ActiveTripScreen = ({ navigation }) => {
                     <Speedometer speed={currentSpeed} limit={currentLimit} status={status} />
                 </View>
 
-                {/* Status Band */}
+                {/* Status band */}
                 <StatusBand status={status} zone={currentZone} limit={currentLimit} />
 
-                {/* Metrics Row */}
+                {/* Metrics */}
                 <View style={styles.metricsRow}>
-                    <MetricTile
-                        label="VIOLATIONS"
-                        value={tripViolations}
-                        color={tripViolations > 0 ? Colors.status.violation : Colors.text.primary}
-                    />
-                    <MetricTile
-                        label="PENALTY"
-                        value={tripPenalty}
-                        unit="Rs."
-                        color={tripPenalty > 0 ? Colors.status.violation : Colors.text.primary}
-                    />
+                    <MetricTile label="VIOLATIONS" value={tripViolations} color={tripViolations > 0 ? '#F0414B' : Colors.text.primary} />
+                    <View style={{ width: 12 }} />
+                    <MetricTile label="PENALTY" value={`₹${tripPenalty}`} color={tripPenalty > 0 ? '#F0414B' : Colors.text.primary} />
                 </View>
 
-                {/* Today's Total */}
-                <View style={styles.todayContainer}>
-                    <Text style={styles.todayLabel}>TODAY'S TOTAL</Text>
-                    <View style={styles.todayMetrics}>
-                        <View style={styles.todayMetric}>
-                            <Text style={styles.todayMetricValue}>{violationsToday}</Text>
-                            <Text style={styles.todayMetricLabel}>Violations</Text>
+                {/* Today card */}
+                <View style={styles.todayCard}>
+                    <Text style={styles.todayCardTitle}>TODAY'S TOTAL</Text>
+                    <View style={styles.todayRow}>
+                        <View style={styles.todayStat}>
+                            <Text style={[styles.todayStatVal, violationsToday > 3 && { color: '#F0414B' }]}>{violationsToday}</Text>
+                            <Text style={styles.todayStatLabel}>Violations</Text>
                         </View>
                         <View style={styles.todayDivider} />
-                        <View style={styles.todayMetric}>
-                            <Text style={styles.todayMetricValue}>Rs. {todayPenalty}</Text>
-                            <Text style={styles.todayMetricLabel}>Penalty</Text>
+                        <View style={styles.todayStat}>
+                            <Text style={[styles.todayStatVal, { color: '#F0414B' }]}>₹{todayPenalty}</Text>
+                            <Text style={styles.todayStatLabel}>Penalty</Text>
                         </View>
                     </View>
-                    {violationsToday >= 4 && (
-                        <Text style={styles.todayWarning}>
-                            ⚠ Warning: {5 - violationsToday} violation(s) until lockout
-                        </Text>
-                    )}
+                    {/* Progress to lockout */}
+                    <View style={styles.lockoutRow}>
+                        {[1, 2, 3, 4, 5].map(n => (
+                            <View key={n} style={[styles.lockoutSegment, n <= violationsToday && styles.lockoutSegmentFilled]} />
+                        ))}
+                    </View>
+                    <Text style={styles.lockoutText}>
+                        {violationsToday >= 5
+                            ? '🔒 Training required before next trip'
+                            : violationsToday >= 4
+                                ? `⚠ 1 more violation = training lockout`
+                                : `${5 - violationsToday} violations until lockout`}
+                    </Text>
                 </View>
 
-                {/* End Trip Button */}
-                <TouchableOpacity style={styles.endTripButton} onPress={handleEndTrip}>
-                    <Text style={styles.endTripButtonText}>END TRIP</Text>
+                {/* Voice incident button */}
+                <TouchableOpacity
+                    style={[styles.incidentBtn, recording && styles.incidentBtnRecording]}
+                    onPress={async () => {
+                        if (recording) {
+                            setRecording(false)
+                            // In production: use expo-speech-recognition or SpeechRecognition
+                            // For now: show text input modal
+                            Alert.prompt(
+                                '🎤 Incident Report',
+                                'Describe the incident:',
+                                async (text) => {
+                                    if (text && text.trim()) {
+                                        const { currentTrip, currentVehicle, currentLocation } = useTripStore.getState()
+                                        if (currentTrip && currentVehicle) {
+                                            try {
+                                                await apiClient.post('/api/incidents/', {
+                                                    vehicle_id: currentVehicle.id,
+                                                    trip_id: currentTrip.id,
+                                                    transcript: text.trim(),
+                                                    lat: currentLocation?.lat || 0,
+                                                    lng: currentLocation?.lng || 0,
+                                                })
+                                                Alert.alert('✅ Incident Logged', 'Supervisor has been notified.')
+                                            } catch (err) {
+                                                Alert.alert('Error', 'Could not log incident. Try again.')
+                                            }
+                                        }
+                                    }
+                                },
+                                'plain-text'
+                            )
+                        } else {
+                            setRecording(true)
+                            setTimeout(() => setRecording(false), 5000) // 5 second timeout
+                        }
+                    }}
+                >
+                    <Text style={styles.incidentBtnIcon}>{recording ? '⏹' : '🎤'}</Text>
+                    <Text style={styles.incidentBtnText}>{recording ? 'TAP TO STOP' : 'REPORT INCIDENT'}</Text>
                 </TouchableOpacity>
 
-                <View style={{ height: Spacing.xl }} />
+                {/* End trip button */}
+                <TouchableOpacity style={styles.endBtn} onPress={handleEndTrip}>
+                    <Text style={styles.endBtnText}>■ END TRIP</Text>
+                </TouchableOpacity>
+
+                <View style={{ height: 32 }} />
             </ScrollView>
         </SafeAreaView>
     );
@@ -267,28 +327,18 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.background.primary,
     },
     sosButton: {
-        position: 'absolute',
-        top: 60,
-        right: Spacing.lg,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: Colors.status.critical,
-        alignItems: 'center',
-        justifyContent: 'center',
+        position: 'absolute', top: 16, right: 16,
+        width: 64, height: 64, borderRadius: 32,
+        backgroundColor: '#C0182B',
+        alignItems: 'center', justifyContent: 'center',
         zIndex: 999,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 5,
+        shadowColor: '#C0182B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
     },
+    sosIcon: { fontSize: 20 },
     sosButtonText: {
-        fontFamily: Typography.sans.family,
-        fontSize: Typography.sans.sizes.caption,
-        fontWeight: Typography.sans.weights.bold,
-        color: Colors.text.inverse,
-        letterSpacing: 0.5,
+        fontSize: 10, fontWeight: '800', color: 'white', letterSpacing: 1,
     },
     scrollContent: {
         flex: 1,
@@ -312,6 +362,28 @@ const styles = StyleSheet.create({
         color: Colors.text.primary,
         marginTop: Spacing.xs,
     },
+    durationHeader: {
+        flexDirection: 'row', alignItems: 'center',
+        margin: 16, marginBottom: 0,
+        backgroundColor: Colors.background.card,
+        borderRadius: 12, padding: 16,
+        borderWidth: 1, borderColor: Colors.border,
+    },
+    durationBlock: { flex: 1, alignItems: 'center' },
+    durationDivider: { width: 1, height: 40, backgroundColor: Colors.border },
+    durationLabel: {
+        fontSize: 10, fontWeight: '700',
+        color: Colors.text.tertiary, letterSpacing: 1.5,
+        marginBottom: 4,
+    },
+    durationValue: {
+        fontFamily: Typography.mono.family,
+        fontSize: 22, fontWeight: '700', color: Colors.text.primary,
+    },
+    statusChip: {
+        fontSize: 14, fontWeight: '800',
+        letterSpacing: 1,
+    },
     speedometerContainer: {
         alignItems: 'center',
         paddingVertical: Spacing.lg,
@@ -321,6 +393,27 @@ const styles = StyleSheet.create({
         paddingHorizontal: Spacing.lg,
         gap: Spacing.md,
     },
+    todayCard: {
+        margin: 16, marginTop: 12,
+        backgroundColor: Colors.background.card,
+        borderRadius: 12, padding: 16,
+        borderWidth: 1, borderColor: Colors.border,
+    },
+    todayCardTitle: {
+        fontSize: 10, fontWeight: '700', color: Colors.text.tertiary,
+        letterSpacing: 1.5, marginBottom: 12,
+    },
+    todayRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginBottom: 16 },
+    todayStat: { alignItems: 'center' },
+    todayStatVal: {
+        fontFamily: Typography.mono.family, fontSize: 28, fontWeight: '700', color: Colors.text.primary,
+    },
+    todayStatLabel: { fontSize: 11, color: Colors.text.tertiary, marginTop: 4 },
+    todayDivider: { width: 1, height: 48, backgroundColor: Colors.border },
+    lockoutRow: { flexDirection: 'row', gap: 4, marginBottom: 8 },
+    lockoutSegment: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Colors.background.secondary },
+    lockoutSegmentFilled: { backgroundColor: '#F0414B' },
+    lockoutText: { fontSize: 12, color: Colors.text.tertiary, textAlign: 'center' },
     todayContainer: {
         marginHorizontal: Spacing.lg,
         marginTop: Spacing.lg,
@@ -358,7 +451,7 @@ const styles = StyleSheet.create({
         color: Colors.text.tertiary,
         marginTop: Spacing.xs,
     },
-    todayDivider: {
+    todayDividerOld: {
         width: 1,
         height: 40,
         backgroundColor: Colors.border,
@@ -385,6 +478,14 @@ const styles = StyleSheet.create({
         fontWeight: Typography.sans.weights.bold,
         color: Colors.text.inverse,
         letterSpacing: 1,
+    },
+    endBtn: {
+        margin: 16, marginTop: 4,
+        backgroundColor: '#F0414B',
+        borderRadius: 12, paddingVertical: 16, alignItems: 'center',
+    },
+    endBtnText: {
+        fontSize: 16, fontWeight: '800', color: 'white', letterSpacing: 2,
     },
     // Pre-start styles
     preStartContainer: {
@@ -466,4 +567,15 @@ const styles = StyleSheet.create({
         color: Colors.text.inverse,
         letterSpacing: 1,
     },
+    incidentBtn: {
+        margin: 16, marginTop: 0, marginBottom: 0,
+        backgroundColor: Colors.background.card,
+        borderRadius: 12, paddingVertical: 14,
+        alignItems: 'center', flexDirection: 'row',
+        justifyContent: 'center', gap: 8,
+        borderWidth: 1.5, borderColor: Colors.border,
+    },
+    incidentBtnRecording: { borderColor: '#F0414B', backgroundColor: 'rgba(240,65,75,0.05)' },
+    incidentBtnIcon: { fontSize: 18 },
+    incidentBtnText: { fontSize: 14, fontWeight: '700', color: Colors.text.secondary, letterSpacing: 0.5 },
 });

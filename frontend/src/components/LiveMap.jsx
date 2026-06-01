@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -6,7 +6,7 @@ import 'leaflet-draw/dist/leaflet.draw.css'
 import { useDashboardStore } from '../store/dashboardStore'
 import { geofencesApi } from '../api/geofences'
 
-// FIX: Leaflet's default icon paths break in Vite — point them to CDN
+// Fix Leaflet icon paths in Vite
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -14,54 +14,73 @@ L.Icon.Default.mergeOptions({
     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 })
 
-// SAIL RDCIS Ranchi coordinates
 const PLANT_CENTER = [23.343, 85.319]
 const PLANT_ZOOM = 15
 
 export default function LiveMap({ onDrawGeofence }) {
     return (
-        // FIX: the container must have 100% height AND width for Leaflet to render
-        // The parent div in DashboardPage has position:relative + height:100%
         <div style={{ position: 'absolute', inset: 0 }}>
             <MapContainer
                 center={PLANT_CENTER}
                 zoom={PLANT_ZOOM}
-                // FIX: must match the container — position absolute fills 100% of the relative parent
                 style={{ height: '100%', width: '100%' }}
-                zoomControl={true}
+                zoomControl={false}
             >
-                {/* CartoDB light tiles — clean, no API key required */}
                 <TileLayer
                     url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
-                    maxZoom={19}
+                    attribution='&copy; CartoDB'
+                    maxZoom={20}
                 />
-
-                {/* These three components MUST be inside MapContainer
-                    so they can access the map instance via useMap() hook */}
+                {/* Custom zoom position */}
+                <ZoomControl />
                 <VehicleMarkerLayer />
                 <GeofenceLayer />
                 <DrawControl onGeofenceDrawn={onDrawGeofence} />
             </MapContainer>
+            <MapOverlay />
         </div>
     )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// VehicleMarkerLayer — reads positions from the Zustand store and places
-// Leaflet markers imperatively. We use useRef to avoid re-creating markers
-// on every render — instead we update existing ones in place.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Custom positioned zoom control ───────────────────────────────
+function ZoomControl() {
+    const map = useMap()
+    useEffect(() => {
+        L.control.zoom({ position: 'topleft' }).addTo(map)
+    }, [map])
+    return null
+}
+
+// ── Compass / attribution overlay ────────────────────────────────
+function MapOverlay() {
+    return (
+        <div style={{
+            position: 'absolute', bottom: '16px', left: '16px', zIndex: 800,
+            display: 'flex', flexDirection: 'column', gap: '6px',
+            pointerEvents: 'none',
+        }}>
+            <div style={{
+                background: 'rgba(16,19,24,0.85)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '4px', padding: '5px 9px',
+                fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-3)',
+                backdropFilter: 'blur(4px)',
+            }}>
+                SAIL RDCIS · Ranchi · 23.343°N 85.319°E
+            </div>
+        </div>
+    )
+}
+
+// ── Vehicle Markers ───────────────────────────────────────────────
 function VehicleMarkerLayer() {
     const map = useMap()
-    const markersRef = useRef({})   // vehicleId → Leaflet Marker object
+    const markersRef = useRef({})
     const { vehiclePositions, setSelectedVehicle, selectedVehicleId } = useDashboardStore()
 
     useEffect(() => {
-        // Track which vehicles we've already seen so we can remove stale ones
         const currentIds = new Set(Object.keys(vehiclePositions))
 
-        // Remove markers for vehicles that ended their trip
+        // Remove stale markers
         Object.keys(markersRef.current).forEach((id) => {
             if (!currentIds.has(id)) {
                 markersRef.current[id].remove()
@@ -69,80 +88,59 @@ function VehicleMarkerLayer() {
             }
         })
 
-        // Add or update a marker for each active vehicle
+        // Add or update markers
         Object.entries(vehiclePositions).forEach(([vehicleId, vehicle]) => {
             const { lat, lng, speed, status } = vehicle
-
-            // Status → colour mapping (same as the sidebar dots)
-            const color = status === 'violation' ? '#EF4444'
-                : status === 'warning' ? '#F59E0B'
-                    : '#22C55E'
-
+            const color = status === 'violation' ? '#EF4444' : status === 'warning' ? '#F59E0B' : '#22C55E'
             const isViolation = status === 'violation'
-            const size = isViolation ? 20 : 16
-            const labelShort = vehicleId.length > 8
-                ? vehicleId.slice(0, 8) + '…'
-                : vehicleId
+            const isWarning = status === 'warning'
+            const dotSize = isViolation ? 18 : 14
+            const label = vehicleId.length > 10 ? vehicleId.slice(0, 10) + '…' : vehicleId
 
-            // Build the custom HTML icon — a coloured dot + vehicle ID + speed label
+            const pulseStyle = isViolation
+                ? `box-shadow: 0 0 0 3px rgba(239,68,68,0.5);`
+                : isWarning
+                    ? `box-shadow: 0 0 0 2px rgba(245,158,11,0.4);`
+                    : ''
+
             const iconHtml = `
-                <div style="
-                    position: relative;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    pointer-events: none;
-                    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
-                ">
-                    <div style="
-                        background: #16181C;
-                        color: #C9CDD6;
-                        font-size: 9px;
-                        font-family: 'Share Tech Mono', monospace;
-                        font-weight: 700;
-                        padding: 1px 5px;
-                        border-radius: 2px;
-                        border: 1px solid rgba(255,255,255,0.15);
-                        white-space: nowrap;
-                        margin-bottom: 3px;
-                    ">${labelShort}</div>
-                    <div style="
-                        width: ${size}px;
-                        height: ${size}px;
-                        border-radius: 50%;
-                        background: ${color};
-                        border: 2.5px solid rgba(255,255,255,0.9);
-                        ${isViolation ? `box-shadow: 0 0 0 4px rgba(239,68,68,0.35);` : ''}
-                    "></div>
-                    <div style="
-                        background: #16181C;
-                        color: ${color};
-                        font-size: 9px;
-                        font-family: 'Share Tech Mono', monospace;
-                        font-weight: 700;
-                        padding: 1px 5px;
-                        border-radius: 2px;
-                        border: 1px solid rgba(255,255,255,0.12);
-                        margin-top: 3px;
-                        white-space: nowrap;
-                    ">${Math.round(speed)} km/h</div>
-                </div>
-            `
+        <div style="
+          display: flex; flex-direction: column; align-items: center;
+          pointer-events: none;
+          filter: drop-shadow(0 2px 6px rgba(0,0,0,0.7));
+        ">
+          <div style="
+            background: #111318; color: #C8CDD8;
+            font-size: 10px; font-family: 'Share Tech Mono', monospace;
+            font-weight: 700; padding: 2px 6px; border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.15);
+            white-space: nowrap; margin-bottom: 3px; letter-spacing: 0.5px;
+          ">${label}</div>
+          <div style="
+            width: ${dotSize}px; height: ${dotSize}px; border-radius: 50%;
+            background: ${color}; border: 2.5px solid rgba(255,255,255,0.9);
+            ${pulseStyle}
+            transition: all 0.3s;
+          "></div>
+          <div style="
+            background: #111318; color: ${color};
+            font-size: 10px; font-family: 'Share Tech Mono', monospace;
+            font-weight: 700; padding: 2px 6px; border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.12);
+            margin-top: 3px; white-space: nowrap;
+          ">${Math.round(speed)} km/h</div>
+        </div>
+      `
 
             const icon = L.divIcon({
-                html: iconHtml,
-                className: '',              // clear Leaflet's default white square
-                iconSize: [size + 24, size + 30],
-                iconAnchor: [(size + 24) / 2, (size + 30) / 2],
+                html: iconHtml, className: '',
+                iconSize: [dotSize + 32, dotSize + 36],
+                iconAnchor: [(dotSize + 32) / 2, (dotSize + 36) / 2],
             })
 
             if (markersRef.current[vehicleId]) {
-                // Vehicle already has a marker — just move it and update icon
-                markersRef.current[vehicleId]
-                    .setLatLng([lat, lng])
-                    .setIcon(icon)
+                markersRef.current[vehicleId].setLatLng([lat, lng]).setIcon(icon)
             } else {
-                // First time we've seen this vehicle — create a new marker
                 const marker = L.marker([lat, lng], { icon, zIndexOffset: isViolation ? 1000 : 0 })
                 marker.on('click', () => setSelectedVehicle(vehicleId))
                 marker.addTo(map)
@@ -151,93 +149,121 @@ function VehicleMarkerLayer() {
         })
     }, [vehiclePositions, map, setSelectedVehicle])
 
-    // When a vehicle is selected from the sidebar, pan the map to it
     useEffect(() => {
         if (selectedVehicleId && vehiclePositions[selectedVehicleId]) {
             const { lat, lng } = vehiclePositions[selectedVehicleId]
-            map.panTo([lat, lng], { animate: true, duration: 0.5 })
+            map.panTo([lat, lng], { animate: true, duration: 0.6 })
         }
     }, [selectedVehicleId, vehiclePositions, map])
 
-    return null  // This component controls Leaflet imperatively — renders nothing in React
+    return null
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GeofenceLayer — loads saved speed zones from backend and draws them as
-// coloured polygons. Loads once when the map is ready.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Geofence Layer with Delete support ──────────────────────────
 function GeofenceLayer() {
     const map = useMap()
-    const layersRef = useRef([])
+    const layersRef = useRef([])      // { layer, id } pairs so we can delete by id
+    const featureGroupRef = useRef(null)
 
     useEffect(() => {
+        // Create a FeatureGroup to hold geofences so editing/deleting works
+        const fg = new L.FeatureGroup()
+        map.addLayer(fg)
+        featureGroupRef.current = fg
+
         geofencesApi.getGeofences()
             .then((zones) => {
-                // Clear previous layers first
-                layersRef.current.forEach((l) => l.remove())
-                layersRef.current = []
-
                 zones.forEach((zone) => {
                     if (!zone.polygon?.coordinates) return
-
-                    // Each zone type gets a distinct colour
                     const colorMap = {
-                        pedestrian: '#A855F7',   // Purple
-                        coal_yard: '#F59E0B',    // Amber
-                        main_road: '#8A9099',    // Grey
-                        restricted: '#EF4444',   // Red
-                        workshop: '#3B82F6',     // Blue
+                        pedestrian: '#A855F7',
+                        coal_yard: '#F59E0B',
+                        main_road: '#8A9099',
+                        restricted: '#EF4444',
+                        workshop: '#3B82F6',
                         default: '#3B82F6',
                     }
                     const color = colorMap[zone.zone_type] || colorMap.default
 
                     try {
-                        // GeoJSON stores [lng, lat] — Leaflet needs [lat, lng]
                         const coords = zone.polygon.coordinates[0].map(([lng, lat]) => [lat, lng])
                         const polygon = L.polygon(coords, {
-                            color,
-                            fillColor: color,
-                            fillOpacity: 0.12,
-                            weight: 1.5,
-                            dashArray: '6 4',
+                            color, fillColor: color, fillOpacity: 0.12,
+                            weight: 1.8, dashArray: '6 4',
                         })
+                        polygon.zoneId = zone.id   // store DB id for delete
 
                         polygon.bindTooltip(
-                            `<div style="font-family:'Share Tech Mono',monospace;font-size:11px;">
-                                <strong>${zone.name}</strong><br/>
-                                Limit: ${zone.speed_limit} km/h
-                            </div>`,
-                            { permanent: false, sticky: true, opacity: 0.95 }
+                            `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;">
+        <strong style="font-size:12px;">${zone.name}</strong><br/>
+        Limit: ${zone.speed_limit} km/h<br/>
+        Type: ${zone.zone_type}<br/>
+        <span style="color:#F0414B;cursor:pointer;" onclick="window._deleteZone && window._deleteZone('${zone.id}')">
+            🗑 Delete zone
+        </span>
+    </div>`,
+                            { permanent: false, sticky: true, opacity: 0.98 }
                         )
 
-                        polygon.addTo(map)
-                        layersRef.current.push(polygon)
+                        fg.addLayer(polygon)
+                        layersRef.current.push({ layer: polygon, id: zone.id })
                     } catch (err) {
                         console.warn('Geofence render failed:', zone.name, err)
                     }
                 })
             })
-            .catch((err) => {
-                // Silently fail — backend may not be running during development
-                console.warn('Could not load geofences (backend offline?):', err.message)
+            .catch((err) => console.warn('Could not load geofences:', err.message))
+
+        // Attach global delete handler
+        window._deleteZone = async (zoneId) => {
+            if (!window.confirm('Delete this speed zone? This cannot be undone.')) return
+            try {
+                await fetch(`/api/geofences/${zoneId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('supervisor_token')}` }
+                })
+                // Reload the map
+                window.location.reload()
+            } catch (err) {
+                alert('Failed to delete zone. Check connection.')
+            }
+        }
+
+        return () => {
+            map.removeLayer(fg)
+        }
+    }, [map])
+
+    // Listen for delete events from DrawControl
+    useEffect(() => {
+        const handleDelete = (e) => {
+            const layers = e.layers
+            layers.eachLayer(async (layer) => {
+                if (layer.zoneId) {
+                    try {
+                        await geofencesApi.deleteGeofence(layer.zoneId)
+                        layersRef.current = layersRef.current.filter(item => item.id !== layer.zoneId)
+                    } catch (err) {
+                        console.error('Failed to delete geofence:', err)
+                    }
+                }
             })
+        }
+        // Use string literal 'draw:deleted' to avoid undefined L.Draw runtime crash on startup
+        map.on('draw:deleted', handleDelete)
+        return () => { map.off('draw:deleted', handleDelete) }
     }, [map])
 
     return null
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DrawControl — adds Leaflet Draw toolbar so supervisors can draw new zones.
-// After finishing a polygon, passes coordinates up to DashboardPage which
-// opens the GeofenceForm modal to name and save the zone.
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Draw Control (polygon + delete) ──────────────────────────────
 function DrawControl({ onGeofenceDrawn }) {
     const map = useMap()
 
     useEffect(() => {
         if (!onGeofenceDrawn) return
 
-        // leaflet-draw patches L globally — import it dynamically
         import('leaflet-draw').then(() => {
             const drawnItems = new L.FeatureGroup()
             map.addLayer(drawnItems)
@@ -245,38 +271,56 @@ function DrawControl({ onGeofenceDrawn }) {
             const drawControl = new L.Control.Draw({
                 position: 'topleft',
                 draw: {
+                    // FREE-DRAW polygon — fully customizable boundary
                     polygon: {
                         allowIntersection: false,
-                        shapeOptions: {
-                            color: '#3B82F6',
-                            fillOpacity: 0.15,
-                            weight: 2,
-                        },
-                        showArea: false,
+                        showArea: true,
                         metric: true,
+                        shapeOptions: {
+                            color: '#3B8BFF',
+                            fillColor: '#3B8BFF',
+                            fillOpacity: 0.12,
+                            weight: 2,
+                            dashArray: '5,5',
+                        },
+                        // Enable vertex editing during draw
+                        drawError: {
+                            color: '#F0414B',
+                            timeout: 1000,
+                        },
                     },
                     polyline: false,
-                    rectangle: false,
+                    rectangle: false,   // disabled — docx says polygon only
                     circle: false,
                     circlemarker: false,
                     marker: false,
                 },
-                edit: { featureGroup: drawnItems },
+                edit: {
+                    featureGroup: drawnItems,
+                    // Enable delete toolbar
+                    remove: true,
+                },
             })
             map.addControl(drawControl)
 
+            // When polygon finished drawing
             map.on(L.Draw.Event.CREATED, (event) => {
                 const layer = event.layer
                 drawnItems.addLayer(layer)
-                // Pass the GeoJSON coordinates to the parent → opens GeofenceForm
                 const geojson = layer.toGeoJSON()
                 onGeofenceDrawn(geojson.geometry.coordinates)
             })
-        }).catch((err) => {
-            console.error('Failed to load leaflet-draw:', err)
-        })
 
-        // No cleanup needed — draw control persists for the session
+            // When a drawn zone is deleted via the toolbar
+            map.on(L.Draw.Event.DELETED, (event) => {
+                const layers = event.layers
+                layers.eachLayer((layer) => {
+                    // The layer removed from drawnItems is a new drawing
+                    // For existing geofences on the map, deletion is handled separately
+                    console.log('Drew zone deleted from map')
+                })
+            })
+        })
     }, [map, onGeofenceDrawn])
 
     return null

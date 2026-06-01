@@ -12,24 +12,20 @@ export default function LoginPage() {
     const handleSubmit = async (e) => {
         e.preventDefault()
         setError('')
-        if (!phone || !password) {
-            setError('Please enter phone number and password')
-            return
-        }
+        if (!phone || !password) { setError('Enter phone and password'); return }
         setLoading(true)
         try {
             const data = await authApi.login(phone, password)
             if (data.role === 'driver') {
                 authApi.logout()
-                setError('Driver accounts cannot access the supervisor dashboard. Use the mobile app.')
-                setLoading(false)
-                return
+                setError('Driver accounts use the mobile app, not this dashboard.')
+                setLoading(false); return
             }
             navigate('/dashboard')
         } catch (err) {
             const msg = err.response?.data?.detail || err.message || 'Login failed'
             if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
-                setError('Cannot reach backend server. Make sure Docker is running:\n"docker-compose up -d" in your SpeedWatch folder.')
+                setError('Cannot reach server. Run: docker-compose up -d')
             } else {
                 setError(msg)
             }
@@ -39,50 +35,81 @@ export default function LoginPage() {
 
     return (
         <div style={S.page}>
-            {/* ── Left panel — branding ── */}
+            {/* Left — branding panel */}
             <div style={S.left}>
-                <div style={S.logo}>
-                    <span style={S.logoText}>SAIL</span>
+                {/* Decorative grid lines */}
+                <div style={S.gridLines}>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} style={{ ...S.gridLine, top: `${i * 14}%` }} />
+                    ))}
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} style={{ ...S.gridLineV, left: `${i * 20}%` }} />
+                    ))}
                 </div>
-                <h1 style={S.title}>SpeedWatch</h1>
-                <p style={S.subtitle}>
-                    Industrial Vehicle Speed Enforcement System for SAIL RDCIS
-                </p>
-                <div style={S.divider} />
-                <p style={S.org}>RDCIS RANCHI</p>
 
-                {/* Dev credentials reminder */}
-                <div style={S.credsBox}>
-                    <div style={S.credsTitle}>Test Credentials</div>
-                    <div style={S.credsRow}>
-                        <span style={S.credsLabel}>Supervisor</span>
-                        <span style={S.credsVal}>+919000000001 / supervisor123</span>
+                <div style={S.leftContent}>
+                    {/* SAIL Logo */}
+                    <div style={S.sailLogoWrap}>
+                        <div style={S.sailLogoCircle}>
+                            <span style={S.sailLogoText}>SAIL</span>
+                        </div>
+                        <div style={S.sailGoldBar} />
                     </div>
-                    <div style={S.credsRow}>
-                        <span style={S.credsLabel}>Admin</span>
-                        <span style={S.credsVal}>+919000000000 / admin123</span>
+
+                    <div style={S.productName}>SpeedWatch</div>
+                    <div style={S.productTagline}>
+                        Industrial Vehicle Speed<br />Enforcement System
+                    </div>
+
+                    <div style={S.separator} />
+
+                    <div style={S.orgBadge}>
+                        <div style={S.orgBadgeInner}>
+                            <span style={{ opacity: 0.5, fontSize: 10 }}>▣</span>
+                            RDCIS · RANCHI
+                        </div>
+                    </div>
+
+                    {/* Feature list */}
+                    <div style={S.featureList}>
+                        {[
+                            'Real-time GPS speed monitoring',
+                            'Progressive penalty enforcement',
+                            'Geofence-aware speed limits',
+                            'Supervisor voice commands',
+                            'AI-powered driver risk scoring',
+                        ].map((f, i) => (
+                            <div key={i} style={S.featureItem}>
+                                <span style={{ color: 'var(--sail-gold)', fontSize: 10 }}>◈</span>
+                                {f}
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
-            {/* ── Right panel — form ── */}
+            {/* Right — login form */}
             <div style={S.right}>
-                <div style={S.card}>
-                    <h2 style={S.cardTitle}>Supervisor Login</h2>
+                <div style={S.formWrap}>
+                    <div style={S.formHeader}>
+                        <div style={S.formTitle}>Supervisor Login</div>
+                        <div style={S.formSubtitle}>Control Center Access</div>
+                    </div>
 
                     {error && (
-                        <div style={S.errorBox}>
+                        <div style={S.error}>
+                            <span>⚠</span>
                             {error}
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} style={S.form}>
                         <div style={S.fieldGroup}>
-                            <label style={S.label}>Phone Number</label>
+                            <label style={S.label}>PHONE NUMBER</label>
                             <input
                                 type="tel"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={e => setPhone(e.target.value)}
                                 placeholder="+919000000001"
                                 style={S.input}
                                 disabled={loading}
@@ -91,11 +118,11 @@ export default function LoginPage() {
                         </div>
 
                         <div style={S.fieldGroup}>
-                            <label style={S.label}>Password</label>
+                            <label style={S.label}>PASSWORD</label>
                             <input
                                 type="password"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={e => setPassword(e.target.value)}
                                 placeholder="Enter password"
                                 style={S.input}
                                 disabled={loading}
@@ -103,18 +130,35 @@ export default function LoginPage() {
                             />
                         </div>
 
-                        <button
-                            type="submit"
-                            style={{ ...S.btn, opacity: loading ? 0.7 : 1 }}
-                            disabled={loading}
-                        >
-                            {loading ? 'SIGNING IN…' : 'LOGIN'}
+                        <button type="submit" style={{ ...S.submitBtn, opacity: loading ? 0.7 : 1 }} disabled={loading}>
+                            {loading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ animation: 'blink 0.8s infinite' }}>●</span>
+                                    AUTHENTICATING...
+                                </span>
+                            ) : 'LOGIN TO CONTROL CENTER'}
                         </button>
                     </form>
 
+                    {/* Test creds box */}
+                    <div style={S.credsBox}>
+                        <div style={S.credsTitle}>TEST CREDENTIALS</div>
+                        <div style={S.credRow}>
+                            <span style={S.credRole}>SUPERVISOR</span>
+                            <span style={S.credVal}>+919000000001 · supervisor123</span>
+                        </div>
+                        <div style={S.credRow}>
+                            <span style={S.credRole}>ADMIN</span>
+                            <span style={S.credVal}>+919000000000 · admin123</span>
+                        </div>
+                        <div style={S.credRow}>
+                            <span style={S.credRole}>DRIVER APP</span>
+                            <span style={S.credVal}>+919111111001 · driver123</span>
+                        </div>
+                    </div>
+
                     <div style={S.footer}>
-                        <p style={S.footerText}>Powered by SAIL • Steel Authority of India Limited</p>
-                        <p style={S.footerText}>Version 3.0.0 • Supervisor Dashboard</p>
+                        Powered by Steel Authority of India Limited
                     </div>
                 </div>
             </div>
@@ -126,165 +170,151 @@ const S = {
     page: {
         minHeight: '100vh',
         display: 'flex',
-        background: 'linear-gradient(135deg, #0A2342 0%, #001f3f 100%)',
+        background: 'var(--bg-0)',
+        overflow: 'hidden',
     },
     left: {
         flex: 1,
+        background: 'var(--sail-navy)',
+        position: 'relative',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '48px',
-        color: 'white',
+        overflow: 'hidden',
     },
-    logo: {
-        width: '120px', height: '120px',
-        background: 'white', borderRadius: '50%',
+    gridLines: { position: 'absolute', inset: 0, overflow: 'hidden' },
+    gridLine: { position: 'absolute', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.04)' },
+    gridLineV: { position: 'absolute', top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,0.04)' },
+    leftContent: {
+        position: 'relative',
+        zIndex: 1,
+        padding: 48,
+        maxWidth: 480,
+    },
+    sailLogoWrap: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 32 },
+    sailLogoCircle: {
+        width: 72, height: 72, borderRadius: '50%',
+        background: 'white',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginBottom: '24px',
-        border: '4px solid #F5A623',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+        border: '3px solid #FFB81C',
+        marginBottom: 12,
     },
-    logoText: {
-        fontSize: '28px', fontWeight: '900',
-        color: '#0A2342', letterSpacing: '3px',
-        fontFamily: 'sans-serif',
+    sailLogoText: {
+        fontFamily: 'var(--font-display)',
+        fontSize: 22, fontWeight: 700,
+        color: '#003A70', letterSpacing: 3,
     },
-    title: {
-        fontSize: '40px', fontWeight: '800',
-        margin: '0 0 12px', textAlign: 'center',
-        fontFamily: 'sans-serif',
+    sailGoldBar: { width: 48, height: 3, background: '#FFB81C', borderRadius: 2 },
+    productName: {
+        fontFamily: 'var(--font-display)',
+        fontSize: 42, fontWeight: 700,
+        color: 'white', letterSpacing: 1,
+        marginBottom: 12,
     },
-    subtitle: {
-        fontSize: '16px', opacity: 0.9,
-        textAlign: 'center', maxWidth: '400px',
-        lineHeight: 1.6, margin: 0,
-        fontFamily: 'sans-serif',
+    productTagline: {
+        fontFamily: 'var(--font-body)',
+        fontSize: 16, color: 'rgba(255,255,255,0.65)',
+        lineHeight: 1.5, marginBottom: 24,
     },
-    divider: {
-        width: '80px', height: '4px',
-        background: '#F5A623',
-        margin: '24px 0',
-    },
-    org: {
-        fontSize: '14px', fontWeight: '700',
-        letterSpacing: '3px', opacity: 0.85,
-        fontFamily: 'sans-serif',
-    },
-    credsBox: {
-        marginTop: '40px',
+    separator: { width: 60, height: 2, background: '#FFB81C', marginBottom: 24 },
+    orgBadge: { marginBottom: 32 },
+    orgBadgeInner: {
+        display: 'inline-flex', alignItems: 'center', gap: 8,
         background: 'rgba(255,255,255,0.08)',
         border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: '8px',
-        padding: '16px 20px',
-        width: '100%',
-        maxWidth: '360px',
+        borderRadius: 4,
+        padding: '5px 12px',
+        fontFamily: 'var(--font-display)',
+        fontSize: 11, fontWeight: 700,
+        color: 'rgba(255,255,255,0.7)', letterSpacing: 2,
     },
-    credsTitle: {
-        fontSize: '10px', fontWeight: '700',
-        letterSpacing: '1.5px', color: '#F5A623',
-        textTransform: 'uppercase', marginBottom: '10px',
-        fontFamily: 'monospace',
-    },
-    credsRow: {
-        display: 'flex', flexDirection: 'column',
-        marginBottom: '8px', gap: '2px',
-    },
-    credsLabel: {
-        fontSize: '9px', fontWeight: '700',
-        color: 'rgba(255,255,255,0.5)',
-        textTransform: 'uppercase', letterSpacing: '1px',
-        fontFamily: 'sans-serif',
-    },
-    credsVal: {
-        fontSize: '12px', fontFamily: 'monospace',
-        color: 'rgba(255,255,255,0.85)',
+    featureList: { display: 'flex', flexDirection: 'column', gap: 10 },
+    featureItem: {
+        display: 'flex', alignItems: 'center', gap: 10,
+        fontFamily: 'var(--font-body)', fontSize: 14,
+        color: 'rgba(255,255,255,0.65)',
     },
     right: {
         flex: 1,
+        background: 'var(--bg-1)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'white',
-        padding: '48px',
+        padding: 48,
     },
-    card: {
-        width: '100%',
-        maxWidth: '440px',
-        padding: '40px',
-        background: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-        border: '1px solid #E5E7EB',
+    formWrap: { width: '100%', maxWidth: 440 },
+    formHeader: { marginBottom: 32 },
+    formTitle: {
+        fontFamily: 'var(--font-display)',
+        fontSize: 28, fontWeight: 700,
+        color: 'var(--text-0)', letterSpacing: 0.5, marginBottom: 4,
     },
-    cardTitle: {
-        fontSize: '24px', fontWeight: '700',
-        color: '#0A2342', marginBottom: '24px',
-        fontFamily: 'sans-serif',
+    formSubtitle: { fontSize: 13, color: 'var(--text-3)', fontFamily: 'var(--font-body)' },
+    error: {
+        display: 'flex', alignItems: 'flex-start', gap: 8,
+        background: 'var(--red-bg)',
+        border: '1px solid rgba(240,65,75,0.3)',
+        borderLeft: '4px solid var(--red)',
+        borderRadius: 'var(--r-md)',
+        padding: '10px 14px',
+        color: 'var(--red)', fontSize: 13,
+        marginBottom: 20,
+        lineHeight: 1.5, whiteSpace: 'pre-line',
+        fontFamily: 'var(--font-body)',
     },
-    errorBox: {
-        background: '#FEF2F2',
-        border: '1px solid #FECACA',
-        borderLeft: '4px solid #EF4444',
-        borderRadius: '6px',
-        padding: '12px 14px',
-        color: '#DC2626',
-        fontSize: '13px',
-        marginBottom: '20px',
-        lineHeight: 1.5,
-        whiteSpace: 'pre-line',
-        fontFamily: 'sans-serif',
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '18px',
-    },
-    fieldGroup: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-    },
+    form: { display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 24 },
+    fieldGroup: { display: 'flex', flexDirection: 'column', gap: 6 },
     label: {
-        fontSize: '13px', fontWeight: '600',
-        color: '#374151', fontFamily: 'sans-serif',
+        fontFamily: 'var(--font-display)',
+        fontSize: 10, fontWeight: 700,
+        color: 'var(--text-3)', letterSpacing: 1.5,
     },
     input: {
-        padding: '13px 14px',
-        fontSize: '14px',
-        border: '2px solid #E5E7EB',
-        borderRadius: '8px',
-        background: '#F9FAFB',
+        padding: '12px 14px',
+        fontSize: 14,
+        border: '1px solid var(--border-2)',
+        borderRadius: 'var(--r-lg)',
+        background: 'var(--bg-2)',
         outline: 'none',
-        color: '#111827',
-        fontFamily: 'monospace',
+        color: 'var(--text-0)',
+        fontFamily: 'var(--font-mono)',
         transition: 'border-color 0.15s',
         width: '100%',
-        boxSizing: 'border-box',
     },
-    btn: {
-        padding: '15px',
-        fontSize: '14px', fontWeight: '700',
+    submitBtn: {
+        padding: '14px',
+        fontSize: 13, fontWeight: 700,
         color: 'white',
-        background: '#0A2342',
+        background: 'var(--sail-blue)',
         border: 'none',
-        borderRadius: '8px',
+        borderRadius: 'var(--r-lg)',
         cursor: 'pointer',
-        letterSpacing: '1.5px',
-        marginTop: '6px',
+        letterSpacing: 1.5,
+        fontFamily: 'var(--font-display)',
         transition: 'all 0.2s',
-        fontFamily: 'sans-serif',
     },
+    credsBox: {
+        background: 'var(--bg-2)',
+        border: '1px solid var(--border-1)',
+        borderRadius: 'var(--r-lg)',
+        padding: '14px 16px',
+        marginBottom: 24,
+    },
+    credsTitle: {
+        fontFamily: 'var(--font-display)', fontSize: 9,
+        fontWeight: 700, letterSpacing: 1.5, color: 'var(--amber)',
+        marginBottom: 10,
+    },
+    credRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 },
+    credRole: {
+        fontFamily: 'var(--font-display)', fontSize: 9,
+        fontWeight: 700, color: 'var(--text-3)',
+        letterSpacing: 0.5, minWidth: 80,
+    },
+    credVal: { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' },
     footer: {
-        marginTop: '28px',
-        paddingTop: '20px',
-        borderTop: '1px solid #E5E7EB',
         textAlign: 'center',
-    },
-    footerText: {
-        fontSize: '12px',
-        color: '#9CA3AF',
-        margin: '4px 0',
-        fontFamily: 'sans-serif',
+        fontSize: 11, color: 'var(--text-4)',
+        fontFamily: 'var(--font-body)',
     },
 }

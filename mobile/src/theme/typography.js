@@ -1,33 +1,30 @@
 export const Typography = {
-    // For precision numbers (speed, penalties)
     mono: {
-        family: 'monospace',
+        family: 'SpaceMono-Regular',
         sizes: {
-            huge: 68,        // Speedometer
-            large: 44,       // Penalties
-            medium: 28,      // Limits
-            small: 20,       // Metrics
-            tiny: 14,        // Labels
+            huge: 72,
+            large: 48,
+            medium: 32,
+            small: 22,
+            tiny: 14,
         },
     },
-
-    // SAIL Professional Typography
     sans: {
         family: 'System',
         sizes: {
-            title: 32,       // Screen titles
-            heading: 24,     // Section headers
-            subheading: 20,  // Card headers
-            body: 16,        // Regular text
-            caption: 14,     // Small labels
-            small: 12,       // Tiny text
+            title: 34,
+            heading: 26,
+            subheading: 20,
+            body: 17,
+            caption: 14,
+            small: 12,
         },
         weights: {
             regular: '400',
             medium: '500',
             semibold: '600',
             bold: '700',
-            heavy: '800',    // For emphasis
+            heavy: '800',
         },
     },
-};
+}
