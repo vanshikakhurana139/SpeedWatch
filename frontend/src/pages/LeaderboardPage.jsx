@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import apiClient from '../api/client'
 
-// ─── WHY THESE STYLES ───────────────────────────────────────────────────────
-// SAIL theme colors: navy #003A70, blue #0066CC, gold #FFB81C
-// Professional leaderboard that looks like an industrial safety board
-// ─────────────────────────────────────────────────────────────────────────────
-
 const BADGE_COLORS = {
     GOLD: '#FFB81C',
-    SILVER: '#C0C0C0',
+    SILVER: '#718096',
     BRONZE: '#CD7F32',
 }
 
@@ -19,9 +14,9 @@ const BADGE_EMOJIS = {
 }
 
 const RISK_COLORS = {
-    LOW: '#10B981',     // green
+    LOW: '#22C55E',     // green
     MEDIUM: '#F59E0B',  // amber
-    HIGH: '#EF4444',    // red
+    HIGH: '#CC0000',    // red
 }
 
 export default function LeaderboardPage() {
@@ -46,12 +41,14 @@ export default function LeaderboardPage() {
             setLeaderboard(lbRes.data)
             setRiskScores(riskRes.data)
         } catch (err) {
-            setError('Could not load data. Make sure Docker is running and backend restarted.')
+            setError('Could not load data. Make sure the backend service is running.')
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     const handleRecalculate = async () => {
+        setLoading(true)
         try {
             await Promise.all([
                 apiClient.post('/leaderboard/calculate'),
@@ -60,6 +57,7 @@ export default function LeaderboardPage() {
             await loadData()
         } catch (err) {
             setError('Recalculation failed.')
+            setLoading(false)
         }
     }
 
@@ -68,13 +66,13 @@ export default function LeaderboardPage() {
             {/* Header */}
             <div style={S.header}>
                 <div>
-                    <div style={S.pageTitle}>🏆 DRIVER SAFETY PERFORMANCE</div>
+                    <h1 style={S.pageTitle}>DRIVER SAFETY PERFORMANCE</h1>
                     <div style={S.pageSubtitle}>
-                        Weekly Leaderboard & AI Risk Scoring — SAIL RDCIS Ranchi
+                        Weekly safety leaderboard & AI driver risk scoring index
                     </div>
                 </div>
                 <button style={S.recalcBtn} onClick={handleRecalculate}>
-                    ↻ RECALCULATE
+                    ↻ RECALCULATE SCORES
                 </button>
             </div>
 
@@ -113,17 +111,18 @@ export default function LeaderboardPage() {
                                         return (
                                             <div key={i} style={{
                                                 ...S.podiumCard,
-                                                borderColor: BADGE_COLORS[driver.badge_type] || '#555',
-                                                transform: isFirst ? 'scale(1.08)' : 'scale(1)',
+                                                borderColor: BADGE_COLORS[driver.badge_type] || '#E2E8F0',
+                                                transform: isFirst ? 'scale(1.06)' : 'scale(1)',
+                                                boxShadow: isFirst ? '0 10px 25px rgba(13,27,62,0.1)' : '0 4px 12px rgba(0,0,0,0.03)',
                                                 zIndex: isFirst ? 2 : 1,
                                             }}>
                                                 <div style={S.badgeEmoji}>
-                                                    {BADGE_EMOJIS[driver.badge_type] || ''}
+                                                    {BADGE_EMOJIS[driver.badge_type] || '👤'}
                                                 </div>
-                                                <div style={S.podiumRank}>#{driver.rank}</div>
+                                                <div style={S.podiumRank}>#{driver.rank} PLACE</div>
                                                 <div style={S.podiumName}>{driver.driver_name}</div>
                                                 <div style={S.podiumStat}>
-                                                    {driver.violation_count} violations
+                                                    <strong>{driver.violation_count}</strong> violations
                                                 </div>
                                                 <div style={S.podiumPenalty}>
                                                     ₹{(driver.total_penalty || 0).toLocaleString('en-IN')}
@@ -136,30 +135,34 @@ export default function LeaderboardPage() {
 
                             {/* Full Table */}
                             <div style={S.tableCard}>
-                                <table style={S.table}>
+                                <table className="data-table">
                                     <thead>
                                         <tr>
-                                            {['RANK', 'DRIVER', 'VIOLATIONS', 'HARSH DRIVING', 'PENALTY', 'BADGE'].map(h => (
-                                                <th key={h} style={S.th}>{h}</th>
-                                            ))}
+                                            <th>RANK</th>
+                                            <th>DRIVER NAME</th>
+                                            <th>VIOLATIONS</th>
+                                            <th>HARSH DRIVING</th>
+                                            <th>TOTAL PENALTY</th>
+                                            <th>BADGE STATUS</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {leaderboard.map((driver, i) => (
-                                            <tr key={i} style={{ background: i % 2 === 0 ? '#1E2128' : '#262B34' }}>
-                                                <td style={S.tdMono}>#{driver.rank}</td>
+                                            <tr key={i}>
+                                                <td style={{ ...S.tdMono, fontWeight: 700 }}>#{driver.rank}</td>
                                                 <td style={S.td}>{driver.driver_name}</td>
                                                 <td style={{
                                                     ...S.tdMono,
-                                                    color: driver.violation_count === 0 ? '#10B981' :
-                                                        driver.violation_count < 3 ? '#F59E0B' : '#EF4444'
+                                                    fontWeight: 700,
+                                                    color: driver.violation_count === 0 ? 'var(--green-500)' :
+                                                        driver.violation_count < 3 ? 'var(--amber-500)' : '#CC0000'
                                                 }}>
                                                     {driver.violation_count}
                                                 </td>
-                                                <td style={{ ...S.tdMono, color: driver.harsh_driving_count > 0 ? '#F59E0B' : '#8A9099' }}>
+                                                <td style={{ ...S.tdMono, color: driver.harsh_driving_count > 0 ? 'var(--amber-500)' : '#718096' }}>
                                                     {driver.harsh_driving_count || 0}
                                                 </td>
-                                                <td style={{ ...S.tdMono, color: '#EF4444' }}>
+                                                <td style={{ ...S.tdMono, color: '#CC0000', fontWeight: 600 }}>
                                                     ₹{(driver.total_penalty || 0).toLocaleString('en-IN')}
                                                 </td>
                                                 <td style={S.td}>
@@ -167,11 +170,17 @@ export default function LeaderboardPage() {
                                                         <span style={{
                                                             color: BADGE_COLORS[driver.badge_type],
                                                             fontWeight: 700,
-                                                            fontSize: '16px',
+                                                            fontSize: '12px',
+                                                            background: `${BADGE_COLORS[driver.badge_type]}1A`,
+                                                            padding: '2px 8px',
+                                                            borderRadius: '4px',
+                                                            border: `1.5px solid ${BADGE_COLORS[driver.badge_type]}33`
                                                         }}>
                                                             {BADGE_EMOJIS[driver.badge_type]} {driver.badge_type}
                                                         </span>
-                                                    ) : '—'}
+                                                    ) : (
+                                                        <span style={{ color: '#A0AEC0' }}>—</span>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}
@@ -188,13 +197,13 @@ export default function LeaderboardPage() {
                             <div style={S.legend}>
                                 <div style={S.legendTitle}>AI RISK SCORE METHODOLOGY</div>
                                 <div style={S.legendItems}>
-                                    <span style={{ ...S.legendBadge, background: '#10B98120', color: '#10B981', border: '1px solid #10B981' }}>
+                                    <span style={{ ...S.legendBadge, background: 'var(--green-bg)', color: 'var(--green-500)', borderColor: 'var(--green-bg)' }}>
                                         0–30 LOW RISK
                                     </span>
-                                    <span style={{ ...S.legendBadge, background: '#F59E0B20', color: '#F59E0B', border: '1px solid #F59E0B' }}>
+                                    <span style={{ ...S.legendBadge, background: 'var(--amber-bg)', color: 'var(--amber-500)', borderColor: 'var(--amber-bg)' }}>
                                         31–70 MEDIUM RISK
                                     </span>
-                                    <span style={{ ...S.legendBadge, background: '#EF444420', color: '#EF4444', border: '1px solid #EF4444' }}>
+                                    <span style={{ ...S.legendBadge, background: 'var(--red-bg)', color: '#CC0000', borderColor: 'var(--red-border)' }}>
                                         71–100 HIGH RISK
                                     </span>
                                 </div>
@@ -213,7 +222,7 @@ export default function LeaderboardPage() {
                                         <div style={S.riskHeader}>
                                             <div style={S.riskName}>{driver.driver_name}</div>
                                             <div style={{
-                                                ...S.riskScore,
+                                                ...S.riskScoreVal,
                                                 color: RISK_COLORS[driver.risk_level] || '#8A9099',
                                             }}>
                                                 {driver.risk_score}
@@ -250,146 +259,234 @@ export default function LeaderboardPage() {
 
 const S = {
     page: {
-        flex: 1, overflowY: 'auto',
-        background: 'var(--bg-0)',
+        flex: 1,
+        overflowY: 'auto',
+        background: '#F0F2F5',
         padding: '24px 28px',
-        display: 'flex', flexDirection: 'column', gap: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
     },
     header: {
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
     },
     pageTitle: {
-        fontFamily: 'var(--font-mono)', fontSize: '16px',
-        color: 'var(--text-0)', letterSpacing: '2px',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '15px',
+        fontWeight: 800,
+        color: '#0D1B3E',
+        letterSpacing: '0.5px',
     },
     pageSubtitle: {
-        fontSize: '11px', color: 'var(--text-3)', marginTop: '4px',
-        fontFamily: 'var(--font-hmi)', letterSpacing: '1px',
+        fontSize: '11px',
+        color: '#718096',
+        marginTop: '3px',
+        fontWeight: 500,
     },
     recalcBtn: {
-        background: 'var(--blue-dim)', color: 'var(--blue)',
-        border: '1px solid rgba(59,130,246,0.35)',
-        borderRadius: '4px', padding: '8px 18px',
-        fontWeight: 700, cursor: 'pointer',
-        fontSize: '12px', letterSpacing: '1px',
-        fontFamily: 'var(--font-hmi)',
+        background: 'rgba(21,35,71,0.08)',
+        color: '#0D1B3E',
+        border: '1.5px solid #0D1B3E',
+        borderRadius: '6px',
+        padding: '8px 18px',
+        fontWeight: 700,
+        cursor: 'pointer',
+        fontSize: '12px',
+        fontFamily: 'Inter, sans-serif',
+        transition: 'all 0.15s',
     },
     error: {
-        background: 'var(--red-dim)', border: '1px solid rgba(239,68,68,0.35)',
-        borderRadius: '4px', padding: '12px 16px',
-        color: 'var(--red)', fontSize: '13px',
+        background: 'rgba(204,0,0,0.1)',
+        border: '1px solid rgba(204,0,0,0.2)',
+        borderRadius: '6px',
+        padding: '12px 16px',
+        color: '#CC0000',
+        fontSize: '13px',
     },
     tabs: {
-        display: 'flex', gap: '8px',
-        borderBottom: '1px solid var(--border-1)', paddingBottom: '8px',
+        display: 'flex',
+        gap: '8px',
+        borderBottom: '1.5px solid #E2E8F0',
+        paddingBottom: '8px',
     },
     tab: {
         background: 'transparent',
-        border: '1px solid var(--border-2)',
-        borderRadius: '4px', color: 'var(--text-3)',
-        padding: '8px 18px', cursor: 'pointer',
-        fontFamily: 'var(--font-hmi)', fontSize: '12px', fontWeight: 700,
-        letterSpacing: '1px',
+        border: '1.5px solid #E2E8F0',
+        borderRadius: '6px',
+        color: '#718096',
+        padding: '8px 18px',
+        cursor: 'pointer',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '12px',
+        fontWeight: 700,
+        transition: 'all 0.15s',
     },
     tabActive: {
-        background: 'var(--blue-dim)', color: 'var(--blue)',
-        border: '1px solid rgba(59,130,246,0.35)',
+        background: '#0D1B3E',
+        color: '#FFFFFF',
+        borderColor: '#0D1B3E',
     },
     loading: {
-        textAlign: 'center', padding: '40px',
-        color: 'var(--text-3)', fontFamily: 'var(--font-mono)',
+        textAlign: 'center',
+        padding: '40px',
+        color: '#718096',
+        fontFamily: 'monospace',
     },
-    content: { display: 'flex', flexDirection: 'column', gap: '20px' },
+    content: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+    },
     podium: {
-        display: 'flex', justifyContent: 'center',
-        gap: '16px', alignItems: 'flex-end', padding: '20px 0',
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '20px',
+        alignItems: 'flex-end',
+        padding: '24px 0',
     },
     podiumCard: {
-        background: 'var(--bg-2)', border: '2px solid',
-        borderRadius: '8px', padding: '20px',
-        textAlign: 'center', minWidth: '160px',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+        background: '#FFFFFF',
+        border: '2px solid',
+        borderRadius: '8px',
+        padding: '20px',
+        textAlign: 'center',
+        minWidth: '170px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '6px',
+        transition: 'all 0.2s',
     },
-    badgeEmoji: { fontSize: '32px' },
+    badgeEmoji: {
+        fontSize: '32px',
+    },
     podiumRank: {
-        fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-3)',
-    },
-    podiumName: {
-        fontFamily: 'var(--font-hmi)', fontSize: '16px',
-        fontWeight: 700, color: 'var(--text-0)',
-    },
-    podiumStat: { fontSize: '12px', color: 'var(--text-2)' },
-    podiumPenalty: {
-        fontFamily: 'var(--font-mono)', fontSize: '14px', color: 'var(--red)',
-    },
-    tableCard: {
-        background: 'var(--bg-2)', border: '1px solid var(--border-1)',
-        borderRadius: '6px', overflow: 'hidden',
-    },
-    table: { width: '100%', borderCollapse: 'collapse' },
-    th: {
-        background: 'var(--bg-4)', color: 'var(--text-3)',
-        padding: '10px 16px', textAlign: 'left',
-        fontSize: '10px', fontWeight: 700, letterSpacing: '1px',
-        fontFamily: 'var(--font-hmi)', textTransform: 'uppercase',
-        borderBottom: '1px solid var(--border-2)',
-    },
-    td: {
-        padding: '12px 16px', fontSize: '13px',
-        color: 'var(--text-1)', borderBottom: '1px solid var(--border-0)',
-        fontFamily: 'var(--font-hmi)',
-    },
-    tdMono: {
-        padding: '12px 16px', fontSize: '13px',
-        color: 'var(--text-1)', borderBottom: '1px solid var(--border-0)',
-        fontFamily: 'var(--font-mono)',
-    },
-    legend: {
-        background: 'var(--bg-2)', border: '1px solid var(--border-1)',
-        borderRadius: '6px', padding: '16px 20px',
-    },
-    legendTitle: {
-        fontSize: '10px', fontWeight: 700, color: 'var(--text-3)',
-        letterSpacing: '1.5px', marginBottom: '12px',
-    },
-    legendItems: { display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' },
-    legendBadge: {
-        padding: '4px 12px', borderRadius: '4px',
-        fontSize: '11px', fontWeight: 700, fontFamily: 'var(--font-hmi)',
+        fontSize: '10px',
+        fontWeight: 700,
+        color: '#718096',
         letterSpacing: '0.5px',
     },
-    legendNote: { fontSize: '11px', color: 'var(--text-3)', marginTop: '8px' },
-    riskGrid: {
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    podiumName: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '15px',
+        fontWeight: 800,
+        color: '#0D1B3E',
+    },
+    podiumStat: {
+        fontSize: '12px',
+        color: '#4A5568',
+    },
+    podiumPenalty: {
+        fontSize: '14px',
+        color: '#CC0000',
+        fontWeight: 700,
+        fontFamily: 'monospace',
+    },
+    tableCard: {
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+    },
+    td: {
+        padding: '12px 16px',
+        fontSize: '13px',
+        color: '#1A202C',
+    },
+    tdMono: {
+        padding: '12px 16px',
+        fontSize: '13px',
+        color: '#1A202C',
+        fontFamily: 'monospace',
+    },
+    legend: {
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '8px',
+        padding: '18px 20px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+    },
+    legendTitle: {
+        fontSize: '10px',
+        fontWeight: 700,
+        color: '#718096',
+        letterSpacing: '0.5px',
+        marginBottom: '12px',
+    },
+    legendItems: {
+        display: 'flex',
         gap: '12px',
-    },
-    riskCard: {
-        background: 'var(--bg-2)', border: '1px solid var(--border-1)',
-        borderRadius: '6px', padding: '16px',
-    },
-    riskHeader: {
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '6px',
-    },
-    riskName: {
-        fontFamily: 'var(--font-hmi)', fontSize: '14px',
-        fontWeight: 700, color: 'var(--text-0)',
-    },
-    riskScore: {
-        fontFamily: 'var(--font-mono)', fontSize: '28px', fontWeight: 700,
-    },
-    riskLevel: {
-        fontSize: '10px', fontWeight: 700, letterSpacing: '1.5px',
+        flexWrap: 'wrap',
         marginBottom: '8px',
     },
+    legendBadge: {
+        padding: '4px 12px',
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: 700,
+        fontFamily: 'Inter, sans-serif',
+        letterSpacing: '0.5px',
+        border: '1.5px solid transparent',
+    },
+    legendNote: {
+        fontSize: '11px',
+        color: '#718096',
+        marginTop: '8px',
+    },
+    riskGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '14px',
+    },
+    riskCard: {
+        background: '#FFFFFF',
+        border: '1px solid #E2E8F0',
+        borderRadius: '8px',
+        padding: '16px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+    },
+    riskHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '4px',
+    },
+    riskName: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        fontWeight: 800,
+        color: '#0D1B3E',
+    },
+    riskScoreVal: {
+        fontFamily: 'monospace',
+        fontSize: '26px',
+        fontWeight: 800,
+    },
+    riskLevel: {
+        fontSize: '10px',
+        fontWeight: 700,
+        letterSpacing: '0.5px',
+        marginBottom: '10px',
+    },
     riskStats: {
-        display: 'flex', gap: '16px',
-        fontSize: '11px', color: 'var(--text-3)', marginBottom: '8px',
+        display: 'flex',
+        gap: '16px',
+        fontSize: '11px',
+        color: '#718096',
+        marginBottom: '10px',
     },
     riskBarBg: {
-        height: '4px', background: 'var(--bg-4)', borderRadius: '2px', overflow: 'hidden',
+        height: '4px',
+        background: '#F0F2F5',
+        borderRadius: '2px',
+        overflow: 'hidden',
     },
     riskBarFill: {
-        height: '100%', borderRadius: '2px', transition: 'width 0.5s ease',
+        height: '100%',
+        borderRadius: '2px',
+        transition: 'width 0.5s ease',
     },
 }

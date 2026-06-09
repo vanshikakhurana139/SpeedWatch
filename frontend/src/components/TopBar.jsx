@@ -1,274 +1,308 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useDashboardStore } from '../store/dashboardStore'
 import { authApi } from '../api/auth'
 import { useNavigate } from 'react-router-dom'
 
+const PAGE_TITLES = {
+    dashboard: 'Live Monitoring',
+    violations: 'Violations',
+    leaderboard: 'Driver Safety',
+    geofencing: 'Geofencing',
+    reports: 'Reports & Analytics',
+}
+
 export default function TopBar() {
-    const [time, setTime] = useState(new Date())
-    const { wsConnected, tickerMessages, activePage, setActivePage, vehiclePositions, violations } = useDashboardStore()
+    const { wsConnected, activePage, vehiclePositions, violations, sosAlerts } = useDashboardStore()
     const navigate = useNavigate()
     const user = authApi.getCurrentUser()
-
-    useEffect(() => {
-        const t = setInterval(() => setTime(new Date()), 1000)
-        return () => clearInterval(t)
-    }, [])
+    const [searchVal, setSearchVal] = useState('')
 
     const handleLogout = () => { authApi.logout(); navigate('/login') }
 
-    const tickerText = tickerMessages.length > 0
-        ? tickerMessages.map(m => `[${m.time}]  ${m.text}`).join('     ·     ')
-        : 'SPEEDWATCH MONITORING ACTIVE  ·  ALL SYSTEMS NOMINAL  ·  SAIL RDCIS RANCHI  ·  INDUSTRIAL VEHICLE ENFORCEMENT'
-
     const activeCount = Object.keys(vehiclePositions).length
     const violationCount = Object.values(vehiclePositions).filter(v => v.status === 'violation').length
-
-    const navItems = [
-        { id: 'dashboard', label: 'LIVE MAP', icon: '◉' },
-        { id: 'reports', label: 'REPORTS', icon: '≡' },
-        { id: 'leaderboard', label: 'RANKINGS', icon: '↑' },
-    ]
+    const activeSos = sosAlerts.filter(a => !a.cleared).length
 
     return (
-        <div style={S.bar}>
-            {/* Brand */}
-            <div style={S.brand}>
-                <div style={S.sailLogo}>
-                    <span style={S.sailText}>SAIL</span>
+        <header style={S.bar}>
+            {/* Left: SpeedWatch title + page label */}
+            <div style={S.left}>
+                <div style={S.appName}>SpeedWatch Industrial</div>
+                <div style={S.dividerV} />
+                <div style={S.pageLabel}>{PAGE_TITLES[activePage] || 'Dashboard'}</div>
+            </div>
+
+            {/* Center: Search */}
+            <div style={S.center}>
+                <div style={S.searchWrap}>
+                    <svg style={S.searchIcon} width="15" height="15" fill="none" stroke="#A0AEC0" strokeWidth="1.8" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <input
+                        style={S.searchInput}
+                        placeholder="Search data points..."
+                        value={searchVal}
+                        onChange={e => setSearchVal(e.target.value)}
+                    />
                 </div>
-                <div>
-                    <div style={S.brandName}>SPEEDWATCH</div>
-                    <div style={S.brandSub}>RDCIS · RANCHI</div>
-                </div>
-                <div style={{
-                    ...S.statusPill,
-                    background: wsConnected ? 'rgba(22,201,116,0.12)' : 'rgba(240,65,75,0.12)',
-                    border: `1px solid ${wsConnected ? 'rgba(22,201,116,0.3)' : 'rgba(240,65,75,0.3)'}`,
-                }}>
+            </div>
+
+            {/* Right: SOS + bell + user */}
+            <div style={S.right}>
+                {/* WS status */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                     <div style={{
-                        width: 6, height: 6, borderRadius: '50%',
-                        background: wsConnected ? 'var(--green)' : 'var(--red)',
+                        width: 7, height: 7, borderRadius: '50%',
+                        background: wsConnected ? '#22C55E' : '#EF4444',
                         animation: wsConnected ? 'glow-pulse 2s infinite' : 'none',
                     }} />
-                    <span style={{ color: wsConnected ? 'var(--green)' : 'var(--red)', fontSize: 10, fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: 1 }}>
+                    <span style={{ fontSize: 11, color: wsConnected ? '#22C55E' : '#EF4444', fontWeight: 600 }}>
                         {wsConnected ? 'LIVE' : 'OFFLINE'}
                     </span>
                 </div>
-            </div>
 
-            {/* Nav */}
-            <nav style={S.nav}>
-                {navItems.map(item => (
-                    <button
-                        key={item.id}
-                        style={{ ...S.navBtn, ...(activePage === item.id ? S.navBtnActive : {}) }}
-                        onClick={() => setActivePage(item.id)}
-                    >
-                        <span style={{ fontSize: 11 }}>{item.icon}</span>
-                        {item.label}
-                        {item.id === 'dashboard' && violationCount > 0 && (
-                            <span style={S.violationBadge}>{violationCount}</span>
-                        )}
-                    </button>
-                ))}
-            </nav>
-
-            {/* Ticker */}
-            <div style={S.tickerWrap}>
-                <div style={S.tickerTrack}>
-                    <span key={tickerText.length} style={S.tickerText}>{tickerText}</span>
-                </div>
-            </div>
-
-            {/* Right */}
-            <div style={S.right}>
-                <div style={S.kpiRow}>
-                    <div style={S.miniKpi}>
+                {/* Active vehicles mini count */}
+                {activeCount > 0 && (
+                    <div style={S.miniCount}>
                         <span style={S.miniNum}>{activeCount}</span>
-                        <span style={S.miniLabel}>ACTIVE</span>
+                        <span style={S.miniLabel}>active</span>
                     </div>
-                    <div style={S.miniDivider} />
-                    <div style={S.miniKpi}>
-                        <span style={{ ...S.miniNum, color: violationCount > 0 ? 'var(--red)' : 'var(--text-2)' }}>
-                            {violationCount}
-                        </span>
-                        <span style={S.miniLabel}>OVER</span>
-                    </div>
-                    <div style={S.miniDivider} />
-                    <div style={S.miniKpi}>
-                        <span style={{ ...S.miniNum, color: violations.length > 0 ? 'var(--amber)' : 'var(--text-2)' }}>
-                            {violations.length}
-                        </span>
-                        <span style={S.miniLabel}>VIO</span>
-                    </div>
-                </div>
+                )}
 
-                <div style={S.clockBlock}>
-                    <span style={S.clock}>{time.toLocaleTimeString('en-IN', { hour12: false })}</span>
-                    <span style={S.clockDate}>{time.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
-                </div>
+                {/* SOS Alert button */}
+                <button style={{
+                    ...S.sosBtn,
+                    animation: activeSos > 0 ? 'sos-flash 0.9s infinite' : 'none',
+                    opacity: activeSos > 0 ? 1 : 0.85,
+                }}>
+                    {activeSos > 0 && <span style={S.sosDot}>{activeSos}</span>}
+                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    SOS ALERT
+                </button>
 
+                {/* Bell */}
+                <button style={S.iconBtn}>
+                    <svg width="18" height="18" fill="none" stroke="#4A5568" strokeWidth="1.8" viewBox="0 0 24 24">
+                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 01-3.46 0" />
+                    </svg>
+                    {violationCount > 0 && <span style={S.bellBadge}>{violationCount}</span>}
+                </button>
+
+                {/* User chip */}
                 {user && (
                     <div style={S.userChip}>
-                        <div style={S.userAvatar}>{(user.name || 'S').charAt(0).toUpperCase()}</div>
+                        <div style={S.userAvatar}>
+                            <svg width="16" height="16" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                            </svg>
+                        </div>
                         <div>
-                            <div style={S.userName}>{user.name}</div>
-                            <div style={S.userRole}>{(user.role || 'SUPERVISOR').toUpperCase()}</div>
+                            <div style={S.userName}>{user.name || 'Admin Controller'}</div>
+                            <div style={S.userSub}>Bhilai Plant Sector 4</div>
                         </div>
                     </div>
                 )}
 
-                <button onClick={handleLogout} style={S.logoutBtn}>SIGN OUT</button>
+                <button style={S.signOutBtn} onClick={handleLogout}>Sign Out</button>
             </div>
-        </div>
+        </header>
     )
 }
 
 const S = {
     bar: {
         height: 'var(--topbar-h)',
-        background: 'var(--bg-1)',
-        borderBottom: '1px solid var(--border-1)',
+        background: '#FFFFFF',
+        borderBottom: '1px solid #E2E8F0',
         display: 'flex',
         alignItems: 'center',
         flexShrink: 0,
         zIndex: 200,
-        overflow: 'hidden',
-    },
-    brand: {
-        display: 'flex', alignItems: 'center', gap: 12,
         padding: '0 20px',
-        borderRight: '1px solid var(--border-1)',
-        height: '100%',
-        minWidth: 220,
+        gap: 16,
+    },
+    left: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
         flexShrink: 0,
     },
-    sailLogo: {
-        width: 38, height: 38, borderRadius: '50%',
-        background: 'white',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        border: '2px solid var(--sail-gold)',
-        flexShrink: 0,
+    appName: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: 15,
+        fontWeight: 800,
+        color: '#0D1B3E',
+        letterSpacing: -0.3,
     },
-    sailText: {
-        fontFamily: 'var(--font-display)',
-        fontSize: 13, fontWeight: 700,
-        color: 'var(--sail-navy)',
-        letterSpacing: 1.5,
+    dividerV: {
+        width: 1,
+        height: 18,
+        background: '#E2E8F0',
     },
-    brandName: {
-        fontFamily: 'var(--font-display)',
-        fontSize: 14, fontWeight: 700,
-        color: 'var(--text-0)',
-        letterSpacing: 2,
-    },
-    brandSub: {
-        fontSize: 9, color: 'var(--text-3)',
-        letterSpacing: 1.5,
-        fontFamily: 'var(--font-display)',
-        fontWeight: 700,
+    pageLabel: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: 13,
+        fontWeight: 600,
+        color: '#718096',
+        letterSpacing: 0.3,
         textTransform: 'uppercase',
     },
-    statusPill: {
-        display: 'flex', alignItems: 'center', gap: 5,
-        padding: '3px 8px', borderRadius: 20,
-        marginLeft: 4,
-    },
-    nav: {
-        display: 'flex', alignItems: 'center',
-        height: '100%',
-        borderRight: '1px solid var(--border-1)',
-        padding: '0 8px', gap: 2,
-        flexShrink: 0,
-    },
-    navBtn: {
-        background: 'transparent', border: 'none',
-        color: 'var(--text-2)',
-        fontSize: 11, fontWeight: 700,
-        letterSpacing: 1.2,
-        padding: '6px 16px',
-        borderRadius: 'var(--r-md)',
-        cursor: 'pointer',
-        fontFamily: 'var(--font-display)',
-        transition: 'all 0.15s',
-        display: 'flex', alignItems: 'center', gap: 6,
-        height: 36,
-        borderBottom: '2px solid transparent',
-    },
-    navBtnActive: {
-        color: 'var(--blue)',
-        borderBottom: '2px solid var(--blue)',
-        background: 'var(--blue-bg)',
-    },
-    violationBadge: {
-        background: 'var(--red)',
-        color: 'white',
-        fontSize: 9, fontWeight: 700,
-        padding: '1px 5px', borderRadius: 10,
-        fontFamily: 'var(--font-mono)',
-        animation: 'blink 1s infinite',
-    },
-    tickerWrap: {
+    center: {
         flex: 1,
-        overflow: 'hidden',
-        height: '100%',
-        display: 'flex', alignItems: 'center',
-        padding: '0 16px',
-        borderRight: '1px solid var(--border-1)',
-        minWidth: 0,
+        display: 'flex',
+        justifyContent: 'center',
     },
-    tickerTrack: { overflow: 'hidden', width: '100%' },
-    tickerText: {
-        display: 'inline-block',
-        color: 'var(--text-3)',
-        fontSize: 10,
-        fontFamily: 'var(--font-mono)',
-        whiteSpace: 'nowrap',
-        letterSpacing: 0.5,
-        animation: 'ticker-scroll 80s linear infinite',
+    searchWrap: {
+        position: 'relative',
+        width: '100%',
+        maxWidth: 320,
+        display: 'flex',
+        alignItems: 'center',
+    },
+    searchIcon: {
+        position: 'absolute',
+        left: 10,
+        pointerEvents: 'none',
+    },
+    searchInput: {
+        width: '100%',
+        padding: '8px 12px 8px 34px',
+        fontSize: 13,
+        fontFamily: 'Inter, sans-serif',
+        border: '1.5px solid #E2E8F0',
+        borderRadius: 8,
+        background: '#F7FAFC',
+        color: '#1A202C',
+        outline: 'none',
+        transition: 'border-color 0.15s',
     },
     right: {
-        display: 'flex', alignItems: 'center', gap: 16,
-        padding: '0 20px',
-        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
         flexShrink: 0,
     },
-    kpiRow: { display: 'flex', alignItems: 'center', gap: 12 },
-    miniKpi: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 },
-    miniNum: { fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--text-0)', lineHeight: 1 },
-    miniLabel: { fontSize: 8, fontWeight: 700, letterSpacing: 0.8, color: 'var(--text-3)', fontFamily: 'var(--font-display)' },
-    miniDivider: { width: 1, height: 24, background: 'var(--border-1)', flexShrink: 0 },
-    clockBlock: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
-    clock: { fontFamily: 'var(--font-mono)', fontSize: 16, color: 'var(--text-0)', letterSpacing: 1 },
-    clockDate: { fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: 1 },
+    miniCount: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1,
+    },
+    miniNum: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: 16,
+        fontWeight: 700,
+        color: '#0D1B3E',
+        lineHeight: 1,
+    },
+    miniLabel: {
+        fontSize: 9,
+        fontWeight: 600,
+        color: '#A0AEC0',
+        letterSpacing: 0.5,
+    },
+    sosBtn: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '7px 14px',
+        background: '#CC0000',
+        color: 'white',
+        border: 'none',
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 700,
+        fontFamily: 'Inter, sans-serif',
+        cursor: 'pointer',
+        letterSpacing: 0.5,
+        position: 'relative',
+    },
+    sosDot: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        background: '#FFB81C',
+        color: '#0D1B3E',
+        fontSize: 9,
+        fontWeight: 800,
+        width: 16,
+        height: 16,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    iconBtn: {
+        background: 'transparent',
+        border: '1.5px solid #E2E8F0',
+        borderRadius: 8,
+        padding: 7,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        transition: 'all 0.15s',
+    },
+    bellBadge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        background: '#CC0000',
+        color: 'white',
+        fontSize: 9,
+        fontWeight: 700,
+        width: 15,
+        height: 15,
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     userChip: {
-        display: 'flex', alignItems: 'center', gap: 10,
-        background: 'var(--bg-3)',
-        border: '1px solid var(--border-1)',
-        borderRadius: 'var(--r-lg)',
-        padding: '5px 12px 5px 6px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
     },
     userAvatar: {
-        width: 28, height: 28, borderRadius: '50%',
-        background: 'var(--blue-bg)',
-        border: '1px solid rgba(59,139,255,0.3)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: 'var(--font-display)',
-        fontSize: 12, fontWeight: 700,
-        color: 'var(--blue)',
+        width: 34,
+        height: 34,
+        borderRadius: '50%',
+        background: '#0D1B3E',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        overflow: 'hidden',
     },
-    userName: { fontSize: 12, color: 'var(--text-0)', fontFamily: 'var(--font-body)', fontWeight: 600 },
-    userRole: { fontSize: 9, color: 'var(--text-3)', letterSpacing: 1, fontFamily: 'var(--font-display)', fontWeight: 700 },
-    logoutBtn: {
+    userName: {
+        fontSize: 13,
+        fontWeight: 600,
+        color: '#1A202C',
+        fontFamily: 'Inter, sans-serif',
+    },
+    userSub: {
+        fontSize: 11,
+        color: '#A0AEC0',
+        fontFamily: 'Inter, sans-serif',
+    },
+    signOutBtn: {
         background: 'transparent',
-        border: '1px solid var(--border-2)',
-        color: 'var(--text-3)',
-        padding: '5px 12px',
-        borderRadius: 'var(--r-md)',
-        fontSize: 10, fontWeight: 700,
-        letterSpacing: 0.5,
+        border: '1.5px solid #E2E8F0',
+        color: '#718096',
+        padding: '6px 12px',
+        borderRadius: 6,
+        fontSize: 13,
+        fontWeight: 500,
+        fontFamily: 'Inter, sans-serif',
         cursor: 'pointer',
-        fontFamily: 'var(--font-display)',
         transition: 'all 0.15s',
         flexShrink: 0,
     },

@@ -24,15 +24,15 @@ export default function LiveMap({ onDrawGeofence }) {
                 center={PLANT_CENTER}
                 zoom={PLANT_ZOOM}
                 style={{ height: '100%', width: '100%' }}
-                zoomControl={false}
+                zoomControl={true}
             >
                 <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; CartoDB'
+                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
                     maxZoom={20}
                 />
                 {/* Custom zoom position */}
-                <ZoomControl />
+                // Removed custom ZoomControl – default zoom control enabled
                 <VehicleMarkerLayer />
                 <GeofenceLayer />
                 <DrawControl onGeofenceDrawn={onDrawGeofence} />
@@ -104,32 +104,7 @@ function VehicleMarkerLayer() {
                     : ''
 
             const iconHtml = `
-        <div style="
-          display: flex; flex-direction: column; align-items: center;
-          pointer-events: none;
-          filter: drop-shadow(0 2px 6px rgba(0,0,0,0.7));
-        ">
-          <div style="
-            background: #111318; color: #C8CDD8;
-            font-size: 10px; font-family: 'Share Tech Mono', monospace;
-            font-weight: 700; padding: 2px 6px; border-radius: 3px;
-            border: 1px solid rgba(255,255,255,0.15);
-            white-space: nowrap; margin-bottom: 3px; letter-spacing: 0.5px;
-          ">${label}</div>
-          <div style="
-            width: ${dotSize}px; height: ${dotSize}px; border-radius: 50%;
-            background: ${color}; border: 2.5px solid rgba(255,255,255,0.9);
-            ${pulseStyle}
-            transition: all 0.3s;
-          "></div>
-          <div style="
-            background: #111318; color: ${color};
-            font-size: 10px; font-family: 'Share Tech Mono', monospace;
-            font-weight: 700; padding: 2px 6px; border-radius: 3px;
-            border: 1px solid rgba(255,255,255,0.12);
-            margin-top: 3px; white-space: nowrap;
-          ">${Math.round(speed)} km/h</div>
-        </div>
+        <div style="pointer-events:none;width:${dotSize}px;height:${dotSize}px;background:${color};border:2.5px solid rgba(255,255,255,0.9);border-radius:50%;${pulseStyle}"></div>
       `
 
             const icon = L.divIcon({
@@ -176,58 +151,38 @@ function GeofenceLayer() {
                 zones.forEach((zone) => {
                     if (!zone.polygon?.coordinates) return
                     const colorMap = {
-                        pedestrian: '#A855F7',
-                        coal_yard: '#F59E0B',
-                        main_road: '#8A9099',
-                        restricted: '#EF4444',
-                        workshop: '#3B82F6',
-                        default: '#3B82F6',
+                        pedestrian: '#b3e5fc',   // pastel blue
+                        coal_yard: '#c8e6c9',    // pastel green
+                        main_road: '#d0f0c0',    // light pastel green
+                        restricted: '#ffccbc',  // pastel orange/red
+                        workshop: '#e1f5fe',    // very light blue
+                        default: '#f5f5dc',      // beige
                     }
                     const color = colorMap[zone.zone_type] || colorMap.default
 
-                    try {
-                        const coords = zone.polygon.coordinates[0].map(([lng, lat]) => [lat, lng])
-                        const polygon = L.polygon(coords, {
-                            color, fillColor: color, fillOpacity: 0.12,
-                            weight: 1.8, dashArray: '6 4',
-                        })
-                        polygon.zoneId = zone.id   // store DB id for delete
-
-                        polygon.bindTooltip(
-                            `<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;">
-        <strong style="font-size:12px;">${zone.name}</strong><br/>
-        Limit: ${zone.speed_limit} km/h<br/>
-        Type: ${zone.zone_type}<br/>
-        <span style="color:#F0414B;cursor:pointer;" onclick="window._deleteZone && window._deleteZone('${zone.id}')">
-            🗑 Delete zone
-        </span>
-    </div>`,
-                            { permanent: false, sticky: true, opacity: 0.98 }
-                        )
-
-                        fg.addLayer(polygon)
-                        layersRef.current.push({ layer: polygon, id: zone.id })
-                    } catch (err) {
-                        console.warn('Geofence render failed:', zone.name, err)
-                    }
+                    // Polygons disabled per user request – zones are not rendered on the map.
                 })
             })
             .catch((err) => console.warn('Could not load geofences:', err.message))
 
         // Attach global delete handler
+        // Global zone actions
         window._deleteZone = async (zoneId) => {
-            if (!window.confirm('Delete this speed zone? This cannot be undone.')) return
+            if (!window.confirm('Delete this speed zone? This cannot be undone.')) return;
             try {
                 await fetch(`/api/geofences/${zoneId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('supervisor_token')}` }
-                })
-                // Reload the map
-                window.location.reload()
+                });
+                window.location.reload();
             } catch (err) {
                 alert('Failed to delete zone. Check connection.')
             }
-        }
+        };
+        // Placeholder for future edit actions (rename/settings are handled in the popup)
+        window._editZone = (zoneId) => {
+            console.log('Edit zone requested:', zoneId);
+        };
 
         return () => {
             map.removeLayer(fg)
@@ -271,35 +226,14 @@ function DrawControl({ onGeofenceDrawn }) {
             const drawControl = new L.Control.Draw({
                 position: 'topleft',
                 draw: {
-                    // FREE-DRAW polygon — fully customizable boundary
-                    polygon: {
-                        allowIntersection: false,
-                        showArea: true,
-                        metric: true,
-                        shapeOptions: {
-                            color: '#3B8BFF',
-                            fillColor: '#3B8BFF',
-                            fillOpacity: 0.12,
-                            weight: 2,
-                            dashArray: '5,5',
-                        },
-                        // Enable vertex editing during draw
-                        drawError: {
-                            color: '#F0414B',
-                            timeout: 1000,
-                        },
-                    },
+                    polygon: false, // polygon drawing disabled per user request
                     polyline: false,
                     rectangle: false,   // disabled — docx says polygon only
                     circle: false,
                     circlemarker: false,
                     marker: false,
                 },
-                edit: {
-                    featureGroup: drawnItems,
-                    // Enable delete toolbar
-                    remove: true,
-                },
+                edit: false, // edit toolbar (buffer buttons) disabled per user request
             })
             map.addControl(drawControl)
 

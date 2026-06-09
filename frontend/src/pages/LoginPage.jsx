@@ -5,6 +5,7 @@ import { authApi } from '../api/auth'
 export default function LoginPage() {
     const [phone, setPhone] = useState('')
     const [password, setPassword] = useState('')
+    const [showPass, setShowPass] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const navigate = useNavigate()
@@ -35,112 +36,147 @@ export default function LoginPage() {
 
     return (
         <div style={S.page}>
-            {/* Left — branding panel */}
+            {/* ── Left Panel — Industrial background ── */}
             <div style={S.left}>
-                {/* Decorative grid lines */}
-                <div style={S.gridLines}>
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <div key={i} style={{ ...S.gridLine, top: `${i * 14}%` }} />
-                    ))}
-                    {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} style={{ ...S.gridLineV, left: `${i * 20}%` }} />
-                    ))}
+                {/* Dark overlay */}
+                <div style={S.overlay} />
+
+                {/* Top-left: SAIL Logo + branding */}
+                <div style={S.topBrand}>
+                    <div style={S.sailBox}>
+                        <SailLogoSvg />
+                    </div>
+                    <div>
+                        <div style={S.brandName}>SpeedWatch</div>
+                        <div style={S.brandSub}>ENFORCEMENT DASHBOARD</div>
+                    </div>
                 </div>
 
-                <div style={S.leftContent}>
-                    {/* SAIL Logo */}
-                    <div style={S.sailLogoWrap}>
-                        <div style={S.sailLogoCircle}>
-                            <span style={S.sailLogoText}>SAIL</span>
-                        </div>
-                        <div style={S.sailGoldBar} />
-                    </div>
+                {/* Center: Headline */}
+                <div style={S.heroContent}>
+                    <h1 style={S.heroHeadline}>
+                        Securing the backbone of<br />industrial excellence.
+                    </h1>
+                    <p style={S.heroSub}>
+                        Advanced real-time monitoring and enforcement systems for SAIL.<br />
+                        Access restricted to authorized operational personnel.
+                    </p>
+                </div>
 
-                    <div style={S.productName}>SpeedWatch</div>
-                    <div style={S.productTagline}>
-                        Industrial Vehicle Speed<br />Enforcement System
-                    </div>
-
-                    <div style={S.separator} />
-
-                    <div style={S.orgBadge}>
-                        <div style={S.orgBadgeInner}>
-                            <span style={{ opacity: 0.5, fontSize: 10 }}>▣</span>
-                            RDCIS · RANCHI
-                        </div>
-                    </div>
-
-                    {/* Feature list */}
-                    <div style={S.featureList}>
-                        {[
-                            'Real-time GPS speed monitoring',
-                            'Progressive penalty enforcement',
-                            'Geofence-aware speed limits',
-                            'Supervisor voice commands',
-                            'AI-powered driver risk scoring',
-                        ].map((f, i) => (
-                            <div key={i} style={S.featureItem}>
-                                <span style={{ color: 'var(--sail-gold)', fontSize: 10 }}>◈</span>
-                                {f}
-                            </div>
-                        ))}
+                {/* Bottom: System status */}
+                <div style={S.statusBar}>
+                    <div style={S.statusLabel}>SYSTEM STATUS</div>
+                    <div style={S.statusRow}>
+                        <div style={S.statusDot} />
+                        <span style={S.statusText}>Global Operations Online</span>
                     </div>
                 </div>
             </div>
 
-            {/* Right — login form */}
+            {/* ── Right Panel — Login form ── */}
             <div style={S.right}>
                 <div style={S.formWrap}>
-                    <div style={S.formHeader}>
-                        <div style={S.formTitle}>Supervisor Login</div>
-                        <div style={S.formSubtitle}>Control Center Access</div>
+                    <div style={S.formTop}>
+                        <h2 style={S.formTitle}>Login</h2>
+                        <p style={S.formSubtitle}>Authorized entry into SpeedWatch core systems.</p>
                     </div>
 
                     {error && (
-                        <div style={S.error}>
-                            <span>⚠</span>
-                            {error}
+                        <div style={S.errorBox}>
+                            <span>⚠</span> {error}
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} style={S.form}>
+                        {/* Phone field */}
                         <div style={S.fieldGroup}>
-                            <label style={S.label}>PHONE NUMBER</label>
-                            <input
-                                type="tel"
-                                value={phone}
-                                onChange={e => setPhone(e.target.value)}
-                                placeholder="+919000000001"
-                                style={S.input}
-                                disabled={loading}
-                                autoComplete="username"
-                            />
+                            <label style={S.fieldLabel}>ENTER SUPERVISOR PHONE NUMBER</label>
+                            <div style={S.inputWrap}>
+                                <span style={S.inputIcon}>
+                                    <svg width="16" height="16" fill="none" stroke="#A0AEC0" strokeWidth="1.5" viewBox="0 0 24 24">
+                                        <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </span>
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={e => setPhone(e.target.value)}
+                                    placeholder="SW-XXXXXX or +91900..."
+                                    style={S.input}
+                                    disabled={loading}
+                                    autoComplete="username"
+                                />
+                            </div>
                         </div>
 
+                        {/* Password field */}
                         <div style={S.fieldGroup}>
-                            <label style={S.label}>PASSWORD</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="Enter password"
-                                style={S.input}
-                                disabled={loading}
-                                autoComplete="current-password"
-                            />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <label style={S.fieldLabel}>ENTER PASSWORD</label>
+                                <span style={S.forgotLink}>Forgot Access?</span>
+                            </div>
+                            <div style={S.inputWrap}>
+                                <span style={S.inputIcon}>
+                                    <svg width="16" height="16" fill="none" stroke="#A0AEC0" strokeWidth="1.5" viewBox="0 0 24 24">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0110 0v4" />
+                                    </svg>
+                                </span>
+                                <input
+                                    type={showPass ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    style={S.input}
+                                    disabled={loading}
+                                    autoComplete="current-password"
+                                />
+                                <button type="button" style={S.eyeBtn} onClick={() => setShowPass(!showPass)}>
+                                    {showPass ? (
+                                        <svg width="16" height="16" fill="none" stroke="#A0AEC0" strokeWidth="1.5" viewBox="0 0 24 24">
+                                            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+                                            <line x1="1" y1="1" x2="23" y2="23" />
+                                        </svg>
+                                    ) : (
+                                        <svg width="16" height="16" fill="none" stroke="#A0AEC0" strokeWidth="1.5" viewBox="0 0 24 24">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
-                        <button type="submit" style={{ ...S.submitBtn, opacity: loading ? 0.7 : 1 }} disabled={loading}>
+                        <button
+                            type="submit"
+                            style={{ ...S.submitBtn, opacity: loading ? 0.75 : 1 }}
+                            disabled={loading}
+                        >
                             {loading ? (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                                     <span style={{ animation: 'blink 0.8s infinite' }}>●</span>
                                     AUTHENTICATING...
                                 </span>
-                            ) : 'LOGIN TO CONTROL CENTER'}
+                            ) : (
+                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    Authenticate &amp; Access
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </span>
+                            )}
                         </button>
                     </form>
 
-                    {/* Test creds box */}
+                    {/* Security badge */}
+                    <div style={S.securityBadge}>
+                        <svg width="14" height="14" fill="none" stroke="#A0AEC0" strokeWidth="1.5" viewBox="0 0 24 24">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        <span>AES-256 Military Grade Encryption Active</span>
+                    </div>
+
+                    {/* Test creds (small, discreet) */}
                     <div style={S.credsBox}>
                         <div style={S.credsTitle}>TEST CREDENTIALS</div>
                         <div style={S.credRow}>
@@ -151,14 +187,18 @@ export default function LoginPage() {
                             <span style={S.credRole}>ADMIN</span>
                             <span style={S.credVal}>+919000000000 · admin123</span>
                         </div>
-                        <div style={S.credRow}>
-                            <span style={S.credRole}>DRIVER APP</span>
-                            <span style={S.credVal}>+919111111001 · driver123</span>
-                        </div>
                     </div>
 
+                    {/* Footer */}
                     <div style={S.footer}>
-                        Powered by Steel Authority of India Limited
+                        <span>© 2024 SAIL DIGITAL</span>
+                        <span style={S.footerDot}>·</span>
+                        <span style={S.footerLink}>SUPPORT</span>
+                        <span style={S.footerDot}>·</span>
+                        <span style={S.footerLink}>LEGAL</span>
+                    </div>
+                    <div style={S.footerNote}>
+                        This system is the property of SAIL. Unauthorized access or use is strictly prohibited and subject to legal action.
                     </div>
                 </div>
             </div>
@@ -166,155 +206,209 @@ export default function LoginPage() {
     )
 }
 
+function SailLogoSvg() {
+    return (
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="4" fill="white" />
+            <text x="50%" y="56%" dominantBaseline="middle" textAnchor="middle"
+                style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 800, fill: '#0D1B3E', letterSpacing: '1px' }}>
+                SAIL
+            </text>
+            <path d="M20 6 L34 20 L20 34 L6 20 Z" fill="none" stroke="#0D1B3E" strokeWidth="1.5" opacity="0.3" />
+        </svg>
+    )
+}
+
+const BG_URL = 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1400&q=80&auto=format'
+
 const S = {
     page: {
         minHeight: '100vh',
         display: 'flex',
-        background: 'var(--bg-0)',
+        fontFamily: 'Inter, sans-serif',
         overflow: 'hidden',
     },
+    /* Left */
     left: {
-        flex: 1,
-        background: 'var(--sail-navy)',
+        flex: '0 0 55%',
         position: 'relative',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: '32px 40px',
+        backgroundImage: `url(${BG_URL})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         overflow: 'hidden',
     },
-    gridLines: { position: 'absolute', inset: 0, overflow: 'hidden' },
-    gridLine: { position: 'absolute', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.04)' },
-    gridLineV: { position: 'absolute', top: 0, bottom: 0, width: 1, background: 'rgba(255,255,255,0.04)' },
-    leftContent: {
-        position: 'relative',
-        zIndex: 1,
-        padding: 48,
+    overlay: {
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(135deg, rgba(10,20,60,0.88) 0%, rgba(5,10,30,0.78) 100%)',
+    },
+    topBrand: {
+        position: 'relative', zIndex: 1,
+        display: 'flex', alignItems: 'center', gap: 14,
+    },
+    sailBox: {
+        borderRadius: 8,
+        overflow: 'hidden',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+        flexShrink: 0,
+    },
+    brandName: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: 20, fontWeight: 800,
+        color: 'white', letterSpacing: 0.5,
+    },
+    brandSub: {
+        fontSize: 10, fontWeight: 600,
+        color: 'rgba(255,255,255,0.55)',
+        letterSpacing: 2, textTransform: 'uppercase',
+    },
+    heroContent: {
+        position: 'relative', zIndex: 1,
         maxWidth: 480,
     },
-    sailLogoWrap: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 32 },
-    sailLogoCircle: {
-        width: 72, height: 72, borderRadius: '50%',
-        background: 'white',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        border: '3px solid #FFB81C',
-        marginBottom: 12,
+    heroHeadline: {
+        fontSize: 38, fontWeight: 800,
+        color: 'white', lineHeight: 1.2,
+        marginBottom: 16,
     },
-    sailLogoText: {
-        fontFamily: 'var(--font-display)',
-        fontSize: 22, fontWeight: 700,
-        color: '#003A70', letterSpacing: 3,
+    heroSub: {
+        fontSize: 14, color: 'rgba(255,255,255,0.65)',
+        lineHeight: 1.7,
     },
-    sailGoldBar: { width: 48, height: 3, background: '#FFB81C', borderRadius: 2 },
-    productName: {
-        fontFamily: 'var(--font-display)',
-        fontSize: 42, fontWeight: 700,
-        color: 'white', letterSpacing: 1,
-        marginBottom: 12,
+    statusBar: {
+        position: 'relative', zIndex: 1,
     },
-    productTagline: {
-        fontFamily: 'var(--font-body)',
-        fontSize: 16, color: 'rgba(255,255,255,0.65)',
-        lineHeight: 1.5, marginBottom: 24,
+    statusLabel: {
+        fontSize: 9, fontWeight: 700,
+        color: 'rgba(255,255,255,0.4)',
+        letterSpacing: 2, textTransform: 'uppercase',
+        marginBottom: 6,
     },
-    separator: { width: 60, height: 2, background: '#FFB81C', marginBottom: 24 },
-    orgBadge: { marginBottom: 32 },
-    orgBadgeInner: {
-        display: 'inline-flex', alignItems: 'center', gap: 8,
-        background: 'rgba(255,255,255,0.08)',
-        border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 4,
-        padding: '5px 12px',
-        fontFamily: 'var(--font-display)',
-        fontSize: 11, fontWeight: 700,
-        color: 'rgba(255,255,255,0.7)', letterSpacing: 2,
+    statusRow: { display: 'flex', alignItems: 'center', gap: 8 },
+    statusDot: {
+        width: 8, height: 8, borderRadius: '50%',
+        background: '#22C55E',
+        boxShadow: '0 0 0 3px rgba(34,197,94,0.25)',
+        animation: 'glow-pulse 2s infinite',
     },
-    featureList: { display: 'flex', flexDirection: 'column', gap: 10 },
-    featureItem: {
-        display: 'flex', alignItems: 'center', gap: 10,
-        fontFamily: 'var(--font-body)', fontSize: 14,
-        color: 'rgba(255,255,255,0.65)',
+    statusText: {
+        fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 500,
     },
+    /* Right */
     right: {
         flex: 1,
-        background: 'var(--bg-1)',
+        background: '#FFFFFF',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 48,
+        padding: '40px 48px',
+        overflowY: 'auto',
     },
-    formWrap: { width: '100%', maxWidth: 440 },
-    formHeader: { marginBottom: 32 },
+    formWrap: { width: '100%', maxWidth: 380 },
+    formTop: { marginBottom: 28 },
     formTitle: {
-        fontFamily: 'var(--font-display)',
-        fontSize: 28, fontWeight: 700,
-        color: 'var(--text-0)', letterSpacing: 0.5, marginBottom: 4,
+        fontSize: 30, fontWeight: 800,
+        color: '#0D1B3E', marginBottom: 6,
     },
-    formSubtitle: { fontSize: 13, color: 'var(--text-3)', fontFamily: 'var(--font-body)' },
-    error: {
+    formSubtitle: {
+        fontSize: 14, color: '#718096', lineHeight: 1.5,
+    },
+    errorBox: {
         display: 'flex', alignItems: 'flex-start', gap: 8,
-        background: 'var(--red-bg)',
-        border: '1px solid rgba(240,65,75,0.3)',
-        borderLeft: '4px solid var(--red)',
-        borderRadius: 'var(--r-md)',
+        background: 'rgba(204,0,0,0.06)',
+        border: '1px solid rgba(204,0,0,0.2)',
+        borderLeft: '3px solid #CC0000',
+        borderRadius: 6,
         padding: '10px 14px',
-        color: 'var(--red)', fontSize: 13,
-        marginBottom: 20,
-        lineHeight: 1.5, whiteSpace: 'pre-line',
-        fontFamily: 'var(--font-body)',
+        color: '#CC0000', fontSize: 13,
+        marginBottom: 20, lineHeight: 1.5,
     },
-    form: { display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 24 },
+    form: { display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 20 },
     fieldGroup: { display: 'flex', flexDirection: 'column', gap: 6 },
-    label: {
-        fontFamily: 'var(--font-display)',
+    fieldLabel: {
         fontSize: 10, fontWeight: 700,
-        color: 'var(--text-3)', letterSpacing: 1.5,
+        color: '#718096', letterSpacing: 0.8,
+        textTransform: 'uppercase',
+    },
+    forgotLink: {
+        fontSize: 12, color: '#0D1B3E',
+        fontWeight: 600, cursor: 'pointer',
+    },
+    inputWrap: {
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+    },
+    inputIcon: {
+        position: 'absolute', left: 12,
+        display: 'flex', alignItems: 'center',
+        pointerEvents: 'none',
     },
     input: {
-        padding: '12px 14px',
-        fontSize: 14,
-        border: '1px solid var(--border-2)',
-        borderRadius: 'var(--r-lg)',
-        background: 'var(--bg-2)',
-        outline: 'none',
-        color: 'var(--text-0)',
-        fontFamily: 'var(--font-mono)',
-        transition: 'border-color 0.15s',
         width: '100%',
+        padding: '11px 40px 11px 38px',
+        fontSize: 14,
+        border: '1.5px solid #E2E8F0',
+        borderRadius: 6,
+        background: '#FFFFFF',
+        outline: 'none',
+        color: '#1A202C',
+        fontFamily: 'Inter, sans-serif',
+        transition: 'border-color 0.15s',
+    },
+    eyeBtn: {
+        position: 'absolute', right: 12,
+        background: 'transparent', border: 'none',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center',
+        padding: 4,
     },
     submitBtn: {
-        padding: '14px',
-        fontSize: 13, fontWeight: 700,
+        width: '100%',
+        padding: '13px',
+        fontSize: 14, fontWeight: 700,
         color: 'white',
-        background: 'var(--sail-blue)',
+        background: '#0D1B3E',
         border: 'none',
-        borderRadius: 'var(--r-lg)',
+        borderRadius: 6,
         cursor: 'pointer',
-        letterSpacing: 1.5,
-        fontFamily: 'var(--font-display)',
+        fontFamily: 'Inter, sans-serif',
         transition: 'all 0.2s',
+        letterSpacing: 0.3,
+    },
+    securityBadge: {
+        display: 'flex', alignItems: 'center', gap: 6,
+        fontSize: 11, color: '#A0AEC0',
+        marginBottom: 20,
     },
     credsBox: {
-        background: 'var(--bg-2)',
-        border: '1px solid var(--border-1)',
-        borderRadius: 'var(--r-lg)',
-        padding: '14px 16px',
-        marginBottom: 24,
+        background: '#F7FAFC',
+        border: '1px solid #E2E8F0',
+        borderRadius: 6,
+        padding: '12px 14px',
+        marginBottom: 20,
     },
     credsTitle: {
-        fontFamily: 'var(--font-display)', fontSize: 9,
-        fontWeight: 700, letterSpacing: 1.5, color: 'var(--amber)',
-        marginBottom: 10,
+        fontSize: 9, fontWeight: 700,
+        color: '#A0AEC0', letterSpacing: 1.5,
+        textTransform: 'uppercase', marginBottom: 8,
     },
-    credRow: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 },
+    credRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 },
     credRole: {
-        fontFamily: 'var(--font-display)', fontSize: 9,
-        fontWeight: 700, color: 'var(--text-3)',
-        letterSpacing: 0.5, minWidth: 80,
+        fontSize: 10, fontWeight: 700,
+        color: '#718096', minWidth: 72,
     },
-    credVal: { fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' },
+    credVal: { fontSize: 11, color: '#4A5568', fontFamily: 'monospace' },
     footer: {
-        textAlign: 'center',
-        fontSize: 11, color: 'var(--text-4)',
-        fontFamily: 'var(--font-body)',
+        display: 'flex', gap: 6, alignItems: 'center',
+        fontSize: 11, color: '#A0AEC0', marginBottom: 6,
+    },
+    footerDot: { color: '#CBD5E0' },
+    footerLink: { cursor: 'pointer', fontWeight: 500 },
+    footerNote: {
+        fontSize: 10, color: '#CBD5E0', lineHeight: 1.6,
     },
 }

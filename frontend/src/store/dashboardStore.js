@@ -111,6 +111,6 @@ export const useDashboardStore = create((set, get) => ({
     setWsConnected: (v) => set({ wsConnected: v }),
 
     // ── Active page / nav ────────────────────────────────────────────────
-    activePage: 'dashboard', // 'dashboard' | 'reports' | 'leaderboard'
+    activePage: 'dashboard', // 'dashboard' | 'reports' | 'leaderboard' | 'violations' | 'geofencing'
     setActivePage: (page) => set({ activePage: page }),
 }))
