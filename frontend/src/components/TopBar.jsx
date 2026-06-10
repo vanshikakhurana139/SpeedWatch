@@ -105,7 +105,7 @@ export default function TopBar() {
                         </div>
                         <div>
                             <div style={S.userName}>{user.name || 'Admin Controller'}</div>
-                            <div style={S.userSub}>Bhilai Plant Sector 4</div>
+
                         </div>
                     </div>
                 )}

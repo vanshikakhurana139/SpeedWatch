@@ -127,14 +127,6 @@ export default function ReportsPage() {
         }
     })
 
-    // Mock vendor data
-    const vendorRanking = [
-        { name: 'BSP Logistics Ltd.', vehicles: 24, violations: 1, compliance: '98.8%', status: 'Excellent' },
-        { name: 'Bajrang Heavy Transports', vehicles: 15, violations: 3, compliance: '94.2%', status: 'Good' },
-        { name: 'Tata Steel Logistics Services', vehicles: 32, violations: 8, compliance: '88.5%', status: 'Warning' },
-        { name: 'Adani Logistics Bhilai', vehicles: 8, violations: 5, compliance: '79.3%', status: 'Critical' },
-    ]
-
     return (
         <div style={S.page}>
             {/* ── Page Header ── */}
@@ -338,14 +330,10 @@ export default function ReportsPage() {
                                 {savingPrefs ? 'SAVING PREFERENCES…' : 'SAVE PREFERENCES'}
                             </button>
                         </div>
-
                         {/* Vendor Rankings panel */}
-                        <div style={S.scheduledCard}>
-                            <h3 style={S.sideCardTitle}>VENDOR COMPLIANCE RANKINGS</h3>
-                            <p style={S.sideCardDesc}>Risk safety scores aggregated by third-party transport contractors.</p>
-                            
+                        <div style={S.vendorCard}>
                             <div style={S.vendorList}>
-                                {vendorRanking.map((vendor, idx) => {
+                                {reportData.vendors?.map((vendor, idx) => {
                                     const rankColor = idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : idx === 2 ? '#CD7F32' : '#718096'
                                     const statusColor = vendor.status === 'Excellent' ? 'var(--green-500)' : vendor.status === 'Good' ? 'var(--amber-500)' : '#CC0000'
                                     return (

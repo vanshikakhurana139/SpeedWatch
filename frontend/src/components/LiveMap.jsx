@@ -17,9 +17,24 @@ L.Icon.Default.mergeOptions({
 const PLANT_CENTER = [23.343, 85.319]
 const PLANT_ZOOM = 15
 
-export default function LiveMap({ onDrawGeofence }) {
+export default function LiveMap({ onDrawGeofence, drawingActive }) {
     return (
         <div style={{ position: 'absolute', inset: 0 }}>
+            <style>{`
+                .geofence-polygon {
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                .leaflet-popup-content-wrapper {
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    background: #FFFFFF;
+                }
+                .leaflet-popup-content {
+                    margin: 0;
+                    padding: 0;
+                }
+            `}</style>
             <MapContainer
                 center={PLANT_CENTER}
                 zoom={PLANT_ZOOM}
@@ -35,7 +50,7 @@ export default function LiveMap({ onDrawGeofence }) {
                 // Removed custom ZoomControl – default zoom control enabled
                 <VehicleMarkerLayer />
                 <GeofenceLayer />
-                <DrawControl onGeofenceDrawn={onDrawGeofence} />
+                <DrawControl onGeofenceDrawn={onDrawGeofence} drawingActive={drawingActive} />
             </MapContainer>
             <MapOverlay />
         </div>
@@ -139,6 +154,7 @@ function GeofenceLayer() {
     const map = useMap()
     const layersRef = useRef([])      // { layer, id } pairs so we can delete by id
     const featureGroupRef = useRef(null)
+    const popupRef = useRef(null)
 
     useEffect(() => {
         // Create a FeatureGroup to hold geofences so editing/deleting works
@@ -151,22 +167,68 @@ function GeofenceLayer() {
                 zones.forEach((zone) => {
                     if (!zone.polygon?.coordinates) return
                     const colorMap = {
-                        pedestrian: '#b3e5fc',   // pastel blue
-                        coal_yard: '#c8e6c9',    // pastel green
-                        main_road: '#d0f0c0',    // light pastel green
-                        restricted: '#ffccbc',  // pastel orange/red
-                        workshop: '#e1f5fe',    // very light blue
-                        default: '#f5f5dc',      // beige
+                        pedestrian: { color: '#A855F7', fillColor: '#b3e5fc' },
+                        coal_yard: { color: '#F59E0B', fillColor: '#c8e6c9' },
+                        main_road: { color: '#8A9099', fillColor: '#d0f0c0' },
+                        restricted: { color: '#EF4444', fillColor: '#ffccbc' },
+                        workshop: { color: '#3B82F6', fillColor: '#e1f5fe' },
+                        ash_pond: { color: '#06B6D4', fillColor: '#cffafe' },
+                        gate: { color: '#22C55E', fillColor: '#dcfce7' },
+                        default: { color: '#718096', fillColor: '#f5f5dc' },
                     }
-                    const color = colorMap[zone.zone_type] || colorMap.default
+                    const colors = colorMap[zone.zone_type] || colorMap.default
 
-                    // Polygons disabled per user request – zones are not rendered on the map.
+                    // Create polygon from coordinates
+                    const coordinates = zone.polygon.coordinates[0] // Get first ring
+                    const latLngs = coordinates.map(coord => [coord[1], coord[0]]) // [lng, lat] -> [lat, lng]
+                    
+                    const polygon = L.polygon(latLngs, {
+                        color: colors.color,
+                        fillColor: colors.fillColor,
+                        fillOpacity: 0.4,
+                        weight: 2,
+                        dashArray: '5, 5',
+                        className: 'geofence-polygon'
+                    })
+                    
+                    polygon.zoneId = zone.id
+                    polygon.zoneData = zone
+
+                    // Add hover events
+                    polygon.on('mouseover', () => {
+                        polygon.setStyle({
+                            fillOpacity: 0.7,
+                            weight: 3,
+                            dashArray: 'none'
+                        })
+                        
+                        // Show popup on hover
+                        const popupContent = `
+                            <div style="font-size: 12px; min-width: 180px;">
+                                <strong style="color: ${colors.color};">${zone.name}</strong><br/>
+                                <span style="color: #666;">Type: ${zone.zone_type.replace('_', ' ')}</span><br/>
+                                <span style="color: #CC0000; font-weight: bold;">⚡ ${zone.speed_limit} km/h</span>
+                            </div>
+                        `
+                        polygon.bindPopup(popupContent, { closeButton: false }).openPopup()
+                    })
+
+                    polygon.on('mouseout', () => {
+                        polygon.setStyle({
+                            fillOpacity: 0.4,
+                            weight: 2,
+                            dashArray: '5, 5'
+                        })
+                        polygon.closePopup()
+                    })
+
+                    fg.addLayer(polygon)
+                    layersRef.current.push({ layer: polygon, id: zone.id })
                 })
             })
             .catch((err) => console.warn('Could not load geofences:', err.message))
 
         // Attach global delete handler
-        // Global zone actions
         window._deleteZone = async (zoneId) => {
             if (!window.confirm('Delete this speed zone? This cannot be undone.')) return;
             try {
@@ -179,7 +241,7 @@ function GeofenceLayer() {
                 alert('Failed to delete zone. Check connection.')
             }
         };
-        // Placeholder for future edit actions (rename/settings are handled in the popup)
+
         window._editZone = (zoneId) => {
             console.log('Edit zone requested:', zoneId);
         };
@@ -213,20 +275,23 @@ function GeofenceLayer() {
 }
 
 // ── Draw Control (polygon + delete) ──────────────────────────────
-function DrawControl({ onGeofenceDrawn }) {
+function DrawControl({ onGeofenceDrawn, drawingActive }) {
     const map = useMap()
+    const drawnItemsRef = useRef(null)
+    const drawControlRef = useRef(null)
 
     useEffect(() => {
         if (!onGeofenceDrawn) return
 
         import('leaflet-draw').then(() => {
             const drawnItems = new L.FeatureGroup()
+            drawnItemsRef.current = drawnItems
             map.addLayer(drawnItems)
 
             const drawControl = new L.Control.Draw({
                 position: 'topleft',
                 draw: {
-                    polygon: false, // polygon drawing disabled per user request
+                    polygon: drawingActive, // enable/disable based on drawingActive state
                     polyline: false,
                     rectangle: false,   // disabled — docx says polygon only
                     circle: false,
@@ -235,6 +300,7 @@ function DrawControl({ onGeofenceDrawn }) {
                 },
                 edit: false, // edit toolbar (buffer buttons) disabled per user request
             })
+            drawControlRef.current = drawControl
             map.addControl(drawControl)
 
             // When polygon finished drawing
@@ -249,13 +315,37 @@ function DrawControl({ onGeofenceDrawn }) {
             map.on(L.Draw.Event.DELETED, (event) => {
                 const layers = event.layers
                 layers.eachLayer((layer) => {
-                    // The layer removed from drawnItems is a new drawing
-                    // For existing geofences on the map, deletion is handled separately
-                    console.log('Drew zone deleted from map')
+                    console.log('Zone deleted from map')
                 })
             })
         })
-    }, [map, onGeofenceDrawn])
+    }, [onGeofenceDrawn, map])
+
+    // Handle drawingActive state change - recreate control to toggle polygon tool
+    useEffect(() => {
+        if (!drawControlRef.current || !map) return
+
+        import('leaflet-draw').then(() => {
+            // Remove old control
+            map.removeControl(drawControlRef.current)
+
+            // Create new control with updated polygon state
+            const newDrawControl = new L.Control.Draw({
+                position: 'topleft',
+                draw: {
+                    polygon: drawingActive, // Toggle polygon drawing based on state
+                    polyline: false,
+                    rectangle: false,
+                    circle: false,
+                    circlemarker: false,
+                    marker: false,
+                },
+                edit: false,
+            })
+            drawControlRef.current = newDrawControl
+            map.addControl(newDrawControl)
+        })
+    }, [drawingActive, map])
 
     return null
 }

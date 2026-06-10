@@ -7,6 +7,7 @@ export default function RightPanel() {
     const [voiceText, setVoiceText] = useState('')
     const [listening, setListening] = useState(false)
     const [sent, setSent] = useState(false)
+    const [expandedViolation, setExpandedViolation] = useState(null)
 
     const selectedVehicle = selectedVehicleId ? vehiclePositions[selectedVehicleId] : null
     const speed = Math.round(selectedVehicle?.speed || 0)
@@ -157,7 +158,12 @@ export default function RightPanel() {
             {/* ── Live Violation Log ── */}
             <div style={S.section}>
                 <div style={S.sectionHeader}>
-                    <span style={S.sectionTitle}>LIVE VIOLATION LOG</span>
+                    <span style={S.sectionTitle}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>⚠ VIOLATIONS</span>
+                            {violations.length > 0 && <span style={S.pulseIcon}>●</span>}
+                        </span>
+                    </span>
                     {violations.length > 0 && (
                         <span style={S.countBadge}>{violations.length}</span>
                     )}
@@ -173,20 +179,27 @@ export default function RightPanel() {
                         </div>
                     ) : (
                         violations.slice(0, 20).map((v, i) => (
-                            <ViolationRow key={v._id || i} violation={v} timeSince={timeSince} isFirst={i === 0} />
+                            <ViolationRow 
+                                key={v._id || i} 
+                                violation={v} 
+                                timeSince={timeSince} 
+                                isFirst={i === 0}
+                                isExpanded={expandedViolation === (v._id || i)}
+                                onToggle={() => setExpandedViolation(expandedViolation === (v._id || i) ? null : (v._id || i))}
+                            />
                         ))
                     )}
                 </div>
 
-                {violations.length > 0 && (
-                    <button style={S.viewAllBtn}>View All Enforcement Logs</button>
+                {violations.length > 20 && (
+                    <button style={S.viewAllBtn}>View All ({violations.length} total)</button>
                 )}
             </div>
         </aside>
     )
 }
 
-function ViolationRow({ violation, timeSince, isFirst }) {
+function ViolationRow({ violation, timeSince, isFirst, isExpanded, onToggle }) {
     const speed = Math.round(violation.speed_recorded || 0)
     const limit = violation.zone_limit || 40
     const timeStr = violation.receivedAt ? timeSince(violation.receivedAt) : '—'
@@ -198,23 +211,55 @@ function ViolationRow({ violation, timeSince, isFirst }) {
             borderLeft: isFirst ? '3px solid #CC0000' : '3px solid #E2E8F0',
             background: isFirst ? 'rgba(204,0,0,0.03)' : 'transparent',
             animation: isFirst ? 'highlight-new 2.5s ease-out forwards' : 'none',
-        }}>
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+        }}
+        onClick={onToggle}
+        >
             <div style={S.vTop}>
                 <span style={{ ...S.vId, color: isFirst ? '#CC0000' : '#0D1B3E' }}>{vehicleId}</span>
                 <span style={S.vTime}>{timeStr}</span>
             </div>
             <div style={S.vDesc}>
-                Speed Violation: {speed}km/h in {violation.zone_name || 'Zone'}
+                Speed Violation: <strong>{speed}km/h</strong> in {violation.zone_name || 'Zone'}
             </div>
-            {violation.action_taken && (
-                <div style={S.vAction}>Action Taken: {violation.action_taken}</div>
+            
+            {/* Expanded details */}
+            {isExpanded && (
+                <div style={S.vExpandedContent}>
+                    {violation.driver_name && (
+                        <div style={S.vDetail}>
+                            <span style={S.vDetailLabel}>Driver:</span>
+                            <span>{violation.driver_name}</span>
+                        </div>
+                    )}
+                    <div style={S.vDetail}>
+                        <span style={S.vDetailLabel}>Speed Limit:</span>
+                        <span>{limit} km/h</span>
+                    </div>
+                    {violation.action_taken && (
+                        <div style={S.vDetail}>
+                            <span style={S.vDetailLabel}>Action:</span>
+                            <span style={S.vAction}>{violation.action_taken}</span>
+                        </div>
+                    )}
+                    {violation.penalty_amount > 0 && (
+                        <div style={S.vDetail}>
+                            <span style={S.vDetailLabel}>Penalty:</span>
+                            <span style={S.vPenalty}>₹{violation.penalty_amount}</span>
+                        </div>
+                    )}
+                </div>
             )}
-            <div style={S.vMeta}>
-                Limit: {limit} km/h
-                {violation.penalty_amount > 0 && (
-                    <span style={S.vPenalty}> · ₹{violation.penalty_amount}</span>
-                )}
-            </div>
+
+            {!isExpanded && (
+                <div style={S.vMeta}>
+                    Limit: {limit} km/h
+                    {violation.penalty_amount > 0 && (
+                        <span style={S.vPenalty}> · ₹{violation.penalty_amount}</span>
+                    )}
+                </div>
+            )}
         </div>
     )
 }
@@ -247,6 +292,11 @@ const S = {
         letterSpacing: 0.8,
         textTransform: 'uppercase',
         fontFamily: 'Inter, sans-serif',
+    },
+    pulseIcon: {
+        fontSize: 10,
+        color: '#CC0000',
+        animation: 'pulse 2s infinite',
     },
     warningBadge: {
         background: '#F59E0B',
@@ -411,6 +461,7 @@ const S = {
         overflowY: 'auto',
         maxHeight: 'calc(100vh - 560px)',
         minHeight: 80,
+        paddingRight: 4,
     },
     emptyViolations: {
         display: 'flex',
@@ -432,7 +483,25 @@ const S = {
     vId: { fontSize: 13, fontWeight: 700, fontFamily: 'Inter, sans-serif' },
     vTime: { fontSize: 11, color: '#A0AEC0' },
     vDesc: { fontSize: 12, color: '#4A5568', lineHeight: 1.4 },
-    vAction: { fontSize: 11, color: '#CC0000', fontWeight: 500, textDecoration: 'underline', cursor: 'pointer' },
+    vExpandedContent: {
+        marginTop: 8,
+        paddingTop: 8,
+        borderTop: '1px solid #E2E8F0',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 5,
+    },
+    vDetail: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: 11,
+        color: '#4A5568',
+    },
+    vDetailLabel: {
+        fontWeight: 600,
+        color: '#718096',
+    },
+    vAction: { color: '#CC0000', fontWeight: 500 },
     vMeta: { fontSize: 11, color: '#A0AEC0' },
     vPenalty: { color: '#CC0000', fontWeight: 600 },
     viewAllBtn: {

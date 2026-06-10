@@ -3,10 +3,14 @@ import LiveMap from '../components/LiveMap'
 import { geofencesApi } from '../api/geofences'
 import { useDashboardStore } from '../store/dashboardStore'
 
-export default function GeofencingPage({ onDrawGeofence }) {
+export default function GeofencingPage() {
     const [zones, setZones] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [drawingActive, setDrawingActive] = useState(false)
+    const [showModal, setShowModal] = useState(false)
+    const [pendingCoordinates, setPendingCoordinates] = useState(null)
+    const [formData, setFormData] = useState({ zoneName: '', zoneType: 'restricted', speedLimit: '20' })
     const { violations } = useDashboardStore()
 
     const fetchZones = async () => {
@@ -37,6 +41,51 @@ export default function GeofencingPage({ onDrawGeofence }) {
         }
     }
 
+    const handleDrawGeofence = (coordinates) => {
+        // Show modal instead of prompts
+        setPendingCoordinates(coordinates)
+        setFormData({ zoneName: '', zoneType: 'restricted', speedLimit: '20' })
+        setShowModal(true)
+    }
+
+    const handleSaveZone = async () => {
+        const { zoneName, zoneType, speedLimit } = formData
+        
+        if (!zoneName.trim()) {
+            alert('Please enter a zone name')
+            return
+        }
+
+        if (!speedLimit || parseInt(speedLimit) <= 0) {
+            alert('Please enter a valid speed limit')
+            return
+        }
+
+        try {
+            setLoading(true)
+            const newZone = {
+                name: zoneName.trim(),
+                zone_type: zoneType,
+                speed_limit: parseInt(speedLimit),
+                polygon: { type: 'Polygon', coordinates: pendingCoordinates },
+                time_rules: {}
+            }
+            console.log('Sending zone creation request:', newZone)
+            const response = await geofencesApi.createGeofence(newZone)
+            console.log('Zone created successfully:', response)
+            setShowModal(false)
+            setDrawingActive(false)
+            setPendingCoordinates(null)
+            await fetchZones()
+        } catch (err) {
+            console.error('Failed to create zone - Full error:', err.response?.data || err.message)
+            const errorMsg = err.response?.data?.detail || err.response?.data?.message || err.message || 'Unknown error'
+            alert(`Failed to create speed zone: ${errorMsg}`)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const ZONE_TYPES = {
         pedestrian: { label: 'Pedestrian', color: '#A855F7', bg: 'rgba(168,85,247,0.1)' },
         coal_yard: { label: 'Coal Yard', color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
@@ -54,24 +103,57 @@ export default function GeofencingPage({ onDrawGeofence }) {
 
     return (
         <div style={S.root}>
+            <style>{`
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                input:focus, select:focus {
+                    outline: none;
+                    border-color: #22C55E !important;
+                    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
+                }
+                button:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                }
+                input::placeholder {
+                    color: #A0AEC0;
+                }
+            `}</style>
             {/* Main Area: Zone Manager on Left, Map on Right */}
             <div style={S.main}>
                 {/* Zone Manager Side Panel */}
                 <div style={S.panel}>
                     <div style={S.panelHeader}>
                         <h2 style={S.panelTitle}>ZONE MANAGER</h2>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <button
+                            style={{
+                                ...S.drawBtn,
+                                ...(drawingActive ? S.drawBtnActive : {}),
+                            }}
+                            onClick={() => setDrawingActive(!drawingActive)}
+                            title="Click to enable drawing mode on the map"
+                        >
+                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ marginRight: 6 }}>
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                            Draw Zone
+                        </button>
                         <span style={S.zoneCount}>{zones.length} active zones</span>
                     </div>
+                </div>
 
                     <div style={S.instructions}>
                         <div style={S.instructionsTitle}>
                             <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ marginRight: 6 }}>
                                 <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            How to add a speed zone:
+                            Speed Zone Manager:
                         </div>
                         <div style={S.instructionsText}>
-                            Use the drawing toolbar (⬡ polygon tool) on the top-left of the map to trace the boundary. A popup will ask for the zone details upon completion.
+                            <strong>Draw a zone:</strong> Click "Draw Zone" button, trace boundary on map.<br/>
+                            <strong>View zone details:</strong> Hover over any zone on the map to see its name, type, and speed limit.
                         </div>
                     </div>
 
@@ -128,7 +210,7 @@ export default function GeofencingPage({ onDrawGeofence }) {
 
                 {/* Map Area */}
                 <div style={S.mapWrapper}>
-                    <LiveMap onDrawGeofence={onDrawGeofence} />
+                    <LiveMap onDrawGeofence={handleDrawGeofence} drawingActive={drawingActive} />
                 </div>
             </div>
 
@@ -161,6 +243,91 @@ export default function GeofencingPage({ onDrawGeofence }) {
                     </div>
                 </div>
             </div>
+
+            {/* Zone Creation Modal */}
+            {showModal && (
+                <div style={S.modalOverlay}>
+                    <div style={S.modalContent}>
+                        <div style={S.modalHeader}>
+                            <h3 style={S.modalTitle}>Create Speed Zone</h3>
+                            <button
+                                style={S.modalCloseBtn}
+                                onClick={() => {
+                                    setShowModal(false)
+                                    setPendingCoordinates(null)
+                                }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div style={S.modalBody}>
+                            <div style={S.formGroup}>
+                                <label style={S.formLabel}>Zone Name</label>
+                                <input
+                                    type="text"
+                                    style={S.formInput}
+                                    placeholder="e.g., Gate Area, Coal Yard"
+                                    value={formData.zoneName}
+                                    onChange={(e) => setFormData({ ...formData, zoneName: e.target.value })}
+                                />
+                            </div>
+
+                            <div style={S.formGroup}>
+                                <label style={S.formLabel}>Zone Type</label>
+                                <select
+                                    style={S.formSelect}
+                                    value={formData.zoneType}
+                                    onChange={(e) => setFormData({ ...formData, zoneType: e.target.value })}
+                                >
+                                    <option value="pedestrian">🚶 Pedestrian Area</option>
+                                    <option value="coal_yard">⛏️ Coal Yard</option>
+                                    <option value="main_road">🛣️ Main Road</option>
+                                    <option value="restricted">🚫 Restricted Area</option>
+                                    <option value="workshop">🔧 Workshop</option>
+                                    <option value="ash_pond">💧 Ash Pond</option>
+                                    <option value="gate">🚪 Gate</option>
+                                </select>
+                            </div>
+
+                            <div style={S.formGroup}>
+                                <label style={S.formLabel}>Speed Limit (km/h)</label>
+                                <div style={S.speedInputContainer}>
+                                    <input
+                                        type="number"
+                                        style={S.formInputSpeed}
+                                        placeholder="20"
+                                        value={formData.speedLimit}
+                                        onChange={(e) => setFormData({ ...formData, speedLimit: e.target.value })}
+                                        min="5"
+                                        max="100"
+                                    />
+                                    <span style={S.speedUnit}>km/h</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={S.modalFooter}>
+                            <button
+                                style={S.cancelBtn}
+                                onClick={() => {
+                                    setShowModal(false)
+                                    setPendingCoordinates(null)
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                style={S.saveBtn}
+                                onClick={handleSaveZone}
+                                disabled={loading}
+                            >
+                                {loading ? 'Saving...' : 'Create Zone'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -191,13 +358,15 @@ const S = {
         boxShadow: '2px 0 8px rgba(0,0,0,0.02)',
     },
     panelHeader: {
-        padding: '16px 20px',
+        padding: '12px 16px',
         borderBottom: '1px solid #E2E8F0',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        gap: '12px',
         background: '#FFFFFF',
         flexShrink: 0,
+        flexWrap: 'wrap',
     },
     panelTitle: {
         fontFamily: 'Inter, sans-serif',
@@ -213,6 +382,29 @@ const S = {
         background: '#F0F2F5',
         padding: '2px 8px',
         borderRadius: '10px',
+    },
+    drawBtn: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '6px 12px',
+        background: '#0D1B3E',
+        color: 'white',
+        border: '1.5px solid #0D1B3E',
+        borderRadius: '6px',
+        fontSize: '11px',
+        fontWeight: 700,
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        fontFamily: 'Inter, sans-serif',
+        letterSpacing: '0.5px',
+        textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
+    },
+    drawBtnActive: {
+        background: '#22C55E',
+        borderColor: '#22C55E',
+        boxShadow: '0 0 12px rgba(34, 197, 94, 0.3)',
     },
     instructions: {
         margin: '16px 20px',
@@ -369,5 +561,147 @@ const S = {
         color: '#A0AEC0',
         fontStyle: 'italic',
         fontWeight: 400,
+    },
+    modalOverlay: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        backdropFilter: 'blur(2px)',
+    },
+    modalContent: {
+        background: '#FFFFFF',
+        borderRadius: '12px',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+        maxWidth: '420px',
+        width: '90%',
+        overflow: 'hidden',
+        animation: 'slideUp 0.3s ease-out',
+    },
+    modalHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '20px',
+        borderBottom: '1px solid #E2E8F0',
+        background: 'linear-gradient(135deg, #0D1B3E 0%, #1a2a5a 100%)',
+    },
+    modalTitle: {
+        fontSize: '16px',
+        fontWeight: 700,
+        color: '#FFFFFF',
+        margin: 0,
+    },
+    modalCloseBtn: {
+        background: 'none',
+        border: 'none',
+        fontSize: '24px',
+        color: '#FFFFFF',
+        cursor: 'pointer',
+        padding: 0,
+        width: '32px',
+        height: '32px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '4px',
+        transition: 'background 0.2s',
+    },
+    modalBody: {
+        padding: '24px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+    },
+    formGroup: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+    },
+    formLabel: {
+        fontSize: '12px',
+        fontWeight: 700,
+        color: '#475569',
+        textTransform: 'uppercase',
+        letterSpacing: '0.3px',
+    },
+    formInput: {
+        padding: '10px 12px',
+        border: '1px solid #CBD5E1',
+        borderRadius: '6px',
+        fontSize: '13px',
+        fontFamily: 'inherit',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+        boxSizing: 'border-box',
+    },
+    formSelect: {
+        padding: '10px 12px',
+        border: '1px solid #CBD5E1',
+        borderRadius: '6px',
+        fontSize: '13px',
+        fontFamily: 'inherit',
+        background: '#FFFFFF',
+        cursor: 'pointer',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+        boxSizing: 'border-box',
+    },
+    speedInputContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        position: 'relative',
+    },
+    formInputSpeed: {
+        flex: 1,
+        padding: '10px 12px',
+        border: '1px solid #CBD5E1',
+        borderRadius: '6px',
+        fontSize: '13px',
+        fontFamily: 'inherit',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+        boxSizing: 'border-box',
+    },
+    speedUnit: {
+        fontSize: '12px',
+        fontWeight: 600,
+        color: '#718096',
+        minWidth: '40px',
+    },
+    modalFooter: {
+        display: 'flex',
+        gap: '12px',
+        padding: '16px 24px',
+        borderTop: '1px solid #E2E8F0',
+        background: '#F8FAFC',
+        justifyContent: 'flex-end',
+    },
+    cancelBtn: {
+        padding: '10px 20px',
+        border: '1px solid #CBD5E1',
+        borderRadius: '6px',
+        background: '#FFFFFF',
+        color: '#475569',
+        fontSize: '13px',
+        fontWeight: 600,
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+    },
+    saveBtn: {
+        padding: '10px 20px',
+        border: 'none',
+        borderRadius: '6px',
+        background: 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)',
+        color: '#FFFFFF',
+        fontSize: '13px',
+        fontWeight: 600,
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)',
     },
 }
