@@ -34,6 +34,23 @@ export default function LiveMap({ onDrawGeofence, drawingActive }) {
                     margin: 0;
                     padding: 0;
                 }
+                @keyframes vehicle-pulse {
+                    0% { transform: scale(0.95); }
+                    100% { transform: scale(1.05); }
+                }
+                @keyframes ring-pulse {
+                    0% { transform: scale(0.8); opacity: 0.8; }
+                    100% { transform: scale(2.4); opacity: 0; }
+                }
+                .vehicle-violating {
+                    animation: vehicle-pulse 0.6s ease-in-out infinite alternate;
+                }
+                .pulse-ring-violating {
+                    animation: ring-pulse 1.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+                }
+                .pulse-ring-warning {
+                    animation: ring-pulse 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+                }
             `}</style>
             <MapContainer
                 center={PLANT_CENTER}
@@ -109,23 +126,49 @@ function VehicleMarkerLayer() {
             const color = status === 'violation' ? '#EF4444' : status === 'warning' ? '#F59E0B' : '#22C55E'
             const isViolation = status === 'violation'
             const isWarning = status === 'warning'
-            const dotSize = isViolation ? 18 : 14
-            const label = vehicleId.length > 10 ? vehicleId.slice(0, 10) + '…' : vehicleId
-
-            const pulseStyle = isViolation
-                ? `box-shadow: 0 0 0 3px rgba(239,68,68,0.5);`
-                : isWarning
-                    ? `box-shadow: 0 0 0 2px rgba(245,158,11,0.4);`
-                    : ''
+            const markerSize = isViolation ? 48 : 42
+            const svgSize = isViolation ? 34 : 28
 
             const iconHtml = `
-        <div style="pointer-events:none;width:${dotSize}px;height:${dotSize}px;background:${color};border:2.5px solid rgba(255,255,255,0.9);border-radius:50%;${pulseStyle}"></div>
-      `
+                <div style="position: relative; display: flex; align-items: center; justify-content: center; width: ${markerSize}px; height: ${markerSize}px;">
+                    ${isViolation ? `
+                        <div style="
+                            position: absolute;
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 50%;
+                            background: ${color};
+                            z-index: 0;
+                        " class="pulse-ring-violating"></div>
+                    ` : ''}
+                    ${isWarning ? `
+                        <div style="
+                            position: absolute;
+                            width: 20px;
+                            height: 20px;
+                            border-radius: 50%;
+                            background: ${color};
+                            z-index: 0;
+                        " class="pulse-ring-warning"></div>
+                    ` : ''}
+                    <svg viewBox="0 0 24 24" width="${svgSize}" height="${svgSize}" class="${isViolation ? 'vehicle-violating' : ''}" style="position: relative; z-index: 1; overflow: visible;">
+                        <path 
+                            d="M18 6h-2V4c0-1.1-.9-2-2-2H2C.9 2 0 2.9 0 4v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 16.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" 
+                            fill="${color}" 
+                            stroke="#FFFFFF" 
+                            stroke-width="1.8" 
+                            stroke-linejoin="round" 
+                            style="filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.35));"
+                        />
+                    </svg>
+                </div>
+            `
 
             const icon = L.divIcon({
-                html: iconHtml, className: '',
-                iconSize: [dotSize + 32, dotSize + 36],
-                iconAnchor: [(dotSize + 32) / 2, (dotSize + 36) / 2],
+                html: iconHtml,
+                className: '',
+                iconSize: [markerSize, markerSize],
+                iconAnchor: [markerSize / 2, markerSize / 2],
             })
 
             if (markersRef.current[vehicleId]) {

@@ -1,25 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Line, Text as SvgText } from 'react-native-svg';
-import { Colors, Typography, Spacing } from '../theme';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { Colors } from '../theme';
 
-export const Speedometer = ({ speed, limit, status }) => {
-    // Arc parameters
-    const size = 280;
+export const Speedometer = ({ speed = 0, limit = 50, status = 'safe', loadType = 'empty' }) => {
+    const size = 240;
     const center = size / 2;
-    const radius = 110;
-    const strokeWidth = 20;
+    const radius = 96;
+    const strokeWidth = 10;
 
-    // Speed arc (0-120 km/h range, shown as 270-degree arc)
-    const startAngle = -225; // Start at bottom-left
-    const endAngle = 45; // End at bottom-right
+    // 270-degree arc parameters
+    const startAngle = -225; // bottom-left
+    const endAngle = 45;    // bottom-right
     const maxSpeed = 120;
 
-    // Calculate current speed angle
     const speedRatio = Math.min(speed / maxSpeed, 1);
     const speedAngle = startAngle + (speedRatio * 270);
 
-    // Convert angle to path
     const polarToCartesian = (angle) => {
         const rad = (angle * Math.PI) / 180;
         return {
@@ -32,132 +29,75 @@ export const Speedometer = ({ speed, limit, status }) => {
         const startPoint = polarToCartesian(start);
         const endPoint = polarToCartesian(end);
         const largeArc = end - start > 180 ? 1 : 0;
-
         return `M ${startPoint.x} ${startPoint.y} A ${radius} ${radius} 0 ${largeArc} 1 ${endPoint.x} ${endPoint.y}`;
     };
 
-    // Color zones on the arc
-    const safeZoneEnd = (40 / maxSpeed) * 270 + startAngle;
-    const warningZoneEnd = (limit / maxSpeed) * 270 + startAngle;
+    // Calculate pointer position
+    const pointerPos = polarToCartesian(speedAngle);
+
+    // Get color for progress arc based on status
+    const arcColor = status === 'violation' ? '#EF4444' : status === 'warning' ? '#F5A623' : '#3B82F6';
+
+    const getLoadTypeLabel = () => {
+        if (loadType === 'hazardous') return 'Hazardous Cargo';
+        if (loadType === 'full') return 'Full Cargo';
+        return 'Standard Cargo';
+    };
 
     return (
         <View style={styles.container}>
-            <Svg width={size} height={size}>
-                {/* Background arc (full range in light blue background) */}
-                <Path
-                    d={createArc(startAngle, endAngle)}
-                    stroke={Colors.sail.lightBlue}
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    strokeLinecap="round"
-                />
-
-                {/* Safe zone (green: 0-40) */}
-                <Path
-                    d={createArc(startAngle, safeZoneEnd)}
-                    stroke={Colors.status.safe}
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    strokeLinecap="round"
-                    opacity={0.3}
-                />
-
-                {/* Warning zone (amber: 40-limit) */}
-                <Path
-                    d={createArc(safeZoneEnd, warningZoneEnd)}
-                    stroke={Colors.status.warning}
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    strokeLinecap="round"
-                    opacity={0.3}
-                />
-
-                {/* Violation zone (red: limit-120) */}
-                <Path
-                    d={createArc(warningZoneEnd, endAngle)}
-                    stroke={Colors.status.violation}
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    strokeLinecap="round"
-                    opacity={0.3}
-                />
-
-                {/* Current speed arc (highlighted) */}
-                {speed > 0 && (
+            {/* Speedometer Svg Dial */}
+            <View style={styles.svgWrapper}>
+                <Svg width={size} height={size}>
+                    {/* Background Track */}
                     <Path
-                        d={createArc(startAngle, speedAngle)}
-                        stroke={
-                            status === 'violation' ? Colors.status.violation :
-                                status === 'warning' ? Colors.status.warning :
-                                    Colors.status.safe
-                        }
-                        strokeWidth={strokeWidth + 4}
+                        d={createArc(startAngle, endAngle)}
+                        stroke="rgba(255, 255, 255, 0.1)"
+                        strokeWidth={strokeWidth}
                         fill="none"
                         strokeLinecap="round"
                     />
-                )}
 
-                {/* Tick marks every 20 km/h */}
-                {[0, 20, 40, 60, 80, 100, 120].map((tickSpeed) => {
-                    const angle = startAngle + (tickSpeed / maxSpeed) * 270;
-                    const outerPoint = polarToCartesian(angle);
-                    const innerRadius = radius - 15;
-                    const innerAngleRad = (angle * Math.PI) / 180;
-                    const innerPoint = {
-                        x: center + innerRadius * Math.cos(innerAngleRad),
-                        y: center + innerRadius * Math.sin(innerAngleRad),
-                    };
-
-                    return (
-                        <Line
-                            key={tickSpeed}
-                            x1={innerPoint.x}
-                            y1={innerPoint.y}
-                            x2={outerPoint.x}
-                            y2={outerPoint.y}
-                            stroke={Colors.text.tertiary}
-                            strokeWidth={2}
+                    {/* Progress Arc */}
+                    {speed > 0 && (
+                        <Path
+                            d={createArc(startAngle, speedAngle)}
+                            stroke={arcColor}
+                            strokeWidth={strokeWidth}
+                            fill="none"
+                            strokeLinecap="round"
                         />
-                    );
-                })}
+                    )}
 
-                {/* Speed labels */}
-                {[0, 40, 80, 120].map((labelSpeed) => {
-                    const angle = startAngle + (labelSpeed / maxSpeed) * 270;
-                    const labelRadius = radius - 35;
-                    const angleRad = (angle * Math.PI) / 180;
-                    const labelPoint = {
-                        x: center + labelRadius * Math.cos(angleRad),
-                        y: center + labelRadius * Math.sin(angleRad),
-                    };
+                    {/* White Pointer Circle */}
+                    <Circle
+                        cx={pointerPos.x}
+                        cy={pointerPos.y}
+                        r="8"
+                        fill="#FFFFFF"
+                        stroke={arcColor}
+                        strokeWidth="2"
+                    />
+                </Svg>
 
-                    return (
-                        <SvgText
-                            key={`label-${labelSpeed}`}
-                            x={labelPoint.x}
-                            y={labelPoint.y}
-                            fill={Colors.text.tertiary}
-                            fontSize="12"
-                            fontFamily="monospace"
-                            textAnchor="middle"
-                            alignmentBaseline="middle"
-                        >
-                            {labelSpeed}
-                        </SvgText>
-                    );
-                })}
-            </Svg>
-
-            {/* Digital speed readout (center) */}
-            <View style={styles.digitalReadout}>
-                <Text style={styles.speedText}>{Math.round(speed)}</Text>
-                <Text style={styles.unitText}>km/h</Text>
+                {/* Center digital speed readout */}
+                <View style={styles.centerReadout}>
+                    <Text style={styles.speedText}>{Math.round(speed)}</Text>
+                    <Text style={styles.unitText}>— KM/H —</Text>
+                </View>
             </View>
 
-            {/* Speed limit indicator */}
-            <View style={styles.limitIndicator}>
-                <Text style={styles.limitLabel}>LIMIT</Text>
-                <Text style={styles.limitValue}>{limit}</Text>
+            {/* Current Limit floating panel */}
+            <View style={styles.limitCard}>
+                <View style={styles.limitSign}>
+                    <View style={styles.limitCircle}>
+                        <Text style={styles.limitSignText}>{limit}</Text>
+                    </View>
+                </View>
+                <View style={styles.limitTextContainer}>
+                    <Text style={styles.limitLabel}>CURRENT LIMIT</Text>
+                    <Text style={styles.limitValue}>{getLoadTypeLabel()}</Text>
+                </View>
             </View>
         </View>
     );
@@ -167,42 +107,85 @@ const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
-        position: 'relative',
     },
-    digitalReadout: {
-        position: 'absolute',
-        top: '45%',
+    svgWrapper: {
+        position: 'relative',
+        width: 240,
+        height: 240,
         alignItems: 'center',
+        justifyContent: 'center',
+    },
+    centerReadout: {
+        position: 'absolute',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     speedText: {
-        fontFamily: Typography.mono.family,
-        fontSize: Typography.mono.sizes.huge,
-        color: Colors.sail.navy,  // SAIL navy for speed
-        fontWeight: '700',
-        letterSpacing: -2,
+        fontSize: 76,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        lineHeight: 84,
     },
     unitText: {
-        fontFamily: Typography.mono.family,
-        fontSize: Typography.mono.sizes.tiny,
-        color: Colors.text.secondary,
-        marginTop: -8,
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#A0AEC0',
+        letterSpacing: 1.5,
+        marginTop: -2,
     },
-    limitIndicator: {
-        position: 'absolute',
-        bottom: 40,
+    limitCard: {
+        flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#101C36',
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#1A2E5A',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        marginTop: -30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 6,
+        gap: 12,
+        minWidth: 190,
+    },
+    limitSign: {
+        width: 32,
+        height: 32,
+        borderRadius: 6,
+        backgroundColor: '#FFFFFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    limitCircle: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        borderWidth: 2.5,
+        borderColor: '#EF4444',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    limitSignText: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: '#07162C',
+    },
+    limitTextContainer: {
+        flexDirection: 'column',
     },
     limitLabel: {
-        fontFamily: Typography.sans.family,
-        fontSize: Typography.sans.sizes.small,
-        color: Colors.text.tertiary,
-        fontWeight: '600',
-        letterSpacing: 1,
+        fontSize: 8,
+        fontWeight: '800',
+        color: '#60A5FA',
+        letterSpacing: 0.5,
     },
     limitValue: {
-        fontFamily: Typography.mono.family,
-        fontSize: Typography.mono.sizes.medium,
-        color: Colors.sail.blue,  // SAIL blue for limit
+        fontSize: 12,
         fontWeight: '700',
+        color: '#FFFFFF',
+        marginTop: 2,
     },
 });

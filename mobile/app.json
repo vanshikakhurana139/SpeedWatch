@@ -35,7 +35,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "SpeedWatch needs your location to monitor vehicle speed."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "sdkVersion": "54.0.0"
   }

@@ -8,7 +8,6 @@ import AccelerometerService from '../services/accelerometer';
 import { getSpeedLimitForPosition } from '../services/geofenceChecker';
 import { saveOfflineViolation } from '../services/database';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
 
 export const useTripStore = create((set, get) => ({
     // State
@@ -220,13 +219,13 @@ export const useTripStore = create((set, get) => ({
             // Save offline
             await saveOfflineViolation(violationData);
 
-            // Estimate penalty locally (Rs. 100 x count)
+            // Estimate penalty locally (Rs. 100 per violation)
             set((state) => ({
                 tripViolations: state.tripViolations + 1,
-                tripPenalty: state.tripPenalty + ((state.tripViolations + 1) * 100),
+                tripPenalty: state.tripPenalty + 100,
             }));
 
-            get().playViolationAlert((get().tripViolations) * 100);
+            get().playViolationAlert(100);
         }
     },
 
@@ -249,17 +248,12 @@ export const useTripStore = create((set, get) => ({
 
     playViolationAlert: async (penaltyAmount) => {
         // Haptic feedback
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-
-        // Play sound (you'll need to add audio files)
         try {
-            const { sound } = await Audio.Sound.createAsync(
-                require('../../assets/sounds/violation-alert.mp3')
-            );
-            await sound.playAsync();
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         } catch (error) {
-            console.log('Error playing sound:', error);
+            console.log('Haptics not available:', error);
         }
+        // Sound file not bundled — skipping audio playback
     },
 
     connectWebSocket: async (tripId) => {

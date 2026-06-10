@@ -43,9 +43,7 @@ async def log_violation(
     
     PROGRESSIVE PENALTY LOGIC:
     - Count how many violations the driver has had TODAY
-    - penalty = Rs. 100 × (today_violation_count + 1)
-    - So: 1st = Rs. 100, 2nd = Rs. 200, 3rd = Rs. 300 etc.
-    - This resets at midnight daily
+    - penalty = Rs. 100 per violation
     """
 
     # Count today's violations for this driver
@@ -60,7 +58,7 @@ async def log_violation(
     )
     today_count = count_result.scalar() or 0
     violation_number = today_count + 1
-    penalty_amount = 100 * violation_number
+    penalty_amount = 100
 
     # Insert the violation record
     violation_id = await db.execute(
@@ -166,7 +164,7 @@ async def log_violation(
         "violation_number": violation_number,
         "penalty_amount": penalty_amount,
         "today_total_violations": violation_number,
-        "today_total_penalty": sum(100 * i for i in range(1, violation_number + 1)),
+        "today_total_penalty": 100 * violation_number,
         "lockout_warning": violation_number >= 4,
         "training_required": violation_number >= 5
     }

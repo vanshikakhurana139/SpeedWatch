@@ -1,28 +1,29 @@
 export const Colors = {
     sail: {
-        navy: '#003A70',
-        blue: '#0066CC',
-        gold: '#FFB81C',
-        lightBlue: '#E6F2FF',
+        navy: '#07162C',      // Deep navy background
+        blue: '#0A1931',      // Dark navy button/accent
+        gold: '#FFB81C',      // Accent gold/amber
+        lightBlue: '#EEF2F6', // Light gray-blue input background
+        accentBlue: '#0066CC', // Vibrant blue for active highlights
     },
     background: {
-        primary: '#F8FAFC',
-        secondary: '#EDF2F7',
-        card: '#FFFFFF',
-        dark: '#111316',
+        primary: '#07162C',   // Deep navy main bg
+        secondary: '#0D1B3E', // Card blue / secondary bg
+        card: '#101C36',      // Translucent card bg
+        dark: '#030A16',
     },
     status: {
-        safe: '#16C974',
-        warning: '#F5A623',
-        violation: '#F0414B',
-        critical: '#C0182B',
+        safe: '#16C974',      // Safe green
+        warning: '#F5A623',   // Warning yellow
+        violation: '#EF4444',  // Violation red
+        critical: '#CC0000',  // Zero-harm banner / SOS red
     },
     text: {
-        primary: '#0D1117',
-        secondary: '#4A5568',
-        tertiary: '#8896A8',
-        inverse: '#FFFFFF',
+        primary: '#FFFFFF',    // White text
+        secondary: '#A0AEC0',  // Muted grey text
+        tertiary: '#4A5568',   // Dark muted text for light inputs
+        inverse: '#07162C',    // Inverse dark text
     },
-    border: '#E2E8F0',
-    shadow: 'rgba(0,58,112,0.08)',
+    border: '#1A2E5A',
+    shadow: 'rgba(0,0,0,0.4)',
 }
