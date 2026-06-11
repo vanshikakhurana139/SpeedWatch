@@ -43,9 +43,7 @@ export default function LoginPage() {
 
                 {/* Top-left: SAIL Logo + branding */}
                 <div style={S.topBrand}>
-                    <div style={S.sailBox}>
-                        <SailLogoSvg />
-                    </div>
+                    <SailLogoSvg />
                     <div>
                         <div style={S.brandName}>SpeedWatch</div>
                         <div style={S.brandSub}>ENFORCEMENT DASHBOARD</div>
@@ -55,7 +53,7 @@ export default function LoginPage() {
                 {/* Center: Headline */}
                 <div style={S.heroContent}>
                     <h1 style={S.heroHeadline}>
-                        Securing the backbone of<br />industrial excellence.
+                        Securing the backbone<br />of industrial excellence.
                     </h1>
                     <p style={S.heroSub}>
                         Advanced real-time monitoring and enforcement systems for SAIL.<br />
@@ -168,30 +166,11 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    {/* Security badge */}
-                    <div style={S.securityBadge}>
-                        <svg width="14" height="14" fill="none" stroke="#A0AEC0" strokeWidth="1.5" viewBox="0 0 24 24">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        </svg>
-                        <span>AES-256 Military Grade Encryption Active</span>
-                    </div>
 
-                    {/* Test creds (small, discreet) */}
-                    <div style={S.credsBox}>
-                        <div style={S.credsTitle}>TEST CREDENTIALS</div>
-                        <div style={S.credRow}>
-                            <span style={S.credRole}>SUPERVISOR</span>
-                            <span style={S.credVal}>+919000000001 · supervisor123</span>
-                        </div>
-                        <div style={S.credRow}>
-                            <span style={S.credRole}>ADMIN</span>
-                            <span style={S.credVal}>+919000000000 · admin123</span>
-                        </div>
-                    </div>
 
                     {/* Footer */}
                     <div style={S.footer}>
-                        <span>© 2024 SAIL DIGITAL</span>
+                        <span>© 2026 SAIL DIGITAL</span>
                         <span style={S.footerDot}>·</span>
                         <span style={S.footerLink}>SUPPORT</span>
                         <span style={S.footerDot}>·</span>
@@ -208,14 +187,22 @@ export default function LoginPage() {
 
 function SailLogoSvg() {
     return (
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <rect width="40" height="40" rx="4" fill="white" />
-            <text x="50%" y="56%" dominantBaseline="middle" textAnchor="middle"
-                style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px', fontWeight: 800, fill: '#0D1B3E', letterSpacing: '1px' }}>
-                SAIL
-            </text>
-            <path d="M20 6 L34 20 L20 34 L6 20 Z" fill="none" stroke="#0D1B3E" strokeWidth="1.5" opacity="0.3" />
-        </svg>
+        <div style={{
+            background: 'white',
+            borderRadius: 10,
+            padding: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
+            flexShrink: 0,
+        }}>
+            <img
+                src="/sail-logo.png"
+                alt="SAIL Logo"
+                style={{ width: 72, height: 72, objectFit: 'contain', display: 'block' }}
+            />
+        </div>
     )
 }
 

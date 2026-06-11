@@ -32,7 +32,7 @@ export default function TopBar() {
                 <div style={S.pageLabel}>{PAGE_TITLES[activePage] || 'Dashboard'}</div>
             </div>
 
-            {/* Center: Search */}
+
             <div style={S.center}>
                 <div style={S.searchWrap}>
                     <svg style={S.searchIcon} width="15" height="15" fill="none" stroke="#A0AEC0" strokeWidth="1.8" viewBox="0 0 24 24">
