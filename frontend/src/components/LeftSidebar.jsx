@@ -50,14 +50,13 @@ export default function LeftSidebar() {
             {/* ── Brand Block ── */}
             <div style={S.brandBlock}>
                 <div style={S.sailLogoBox}>
-                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-                        <rect width="36" height="36" rx="4" fill="white" opacity="0.92" />
-                        <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle"
-                            style={{ fontFamily: 'Inter, sans-serif', fontSize: '10px', fontWeight: 800, fill: '#0D1B3E', letterSpacing: '0.5px' }}>
-                            SAIL
-                        </text>
-                        <path d="M18 4 L32 18 L18 32 L4 18 Z" fill="none" stroke="#0D1B3E" strokeWidth="1.2" opacity="0.25" />
-                    </svg>
+                    <div style={{ width: 72, height: 72, backgroundColor: 'white', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4 }}>
+                        <img 
+                            src="/sail-logo.png" 
+                            alt="SAIL" 
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                        />
+                    </div>
                 </div>
                 <div style={S.brandText}>
                     <div style={S.brandTitle}>SAIL Plant</div>

@@ -69,6 +69,54 @@ async def get_daily_report(
     }
 
 
+@router.get("/weekly-trend")
+async def get_weekly_trend(
+    end_date: Optional[str] = None,
+    current_user=Depends(require_supervisor),
+    db: AsyncSession = Depends(get_db)
+):
+    """Returns violation counts and penalty totals for each of the 7 days
+    ending on `end_date` (inclusive).  Used by the 7-day bar chart."""
+    if end_date is None:
+        end_date = str(date.today())
+
+    try:
+        target_end = date.fromisoformat(end_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    start_date = target_end - timedelta(days=6)
+    day_after_end = target_end + timedelta(days=1)
+
+    result = await db.execute(
+        text("""
+            SELECT
+                DATE(v.timestamp) AS day,
+                COUNT(*)          AS violation_count,
+                COALESCE(SUM(v.penalty_amount), 0) AS penalty_total
+            FROM violations v
+            WHERE v.timestamp >= :start AND v.timestamp < :end
+            GROUP BY DATE(v.timestamp)
+            ORDER BY day
+        """),
+        {"start": start_date, "end": day_after_end}
+    )
+    rows = result.fetchall()
+    day_map = {str(row._mapping["day"]): row._mapping for row in rows}
+
+    trend = []
+    for i in range(7):
+        d = start_date + timedelta(days=i)
+        key = str(d)
+        trend.append({
+            "date": key,
+            "violations": int(day_map[key]["violation_count"]) if key in day_map else 0,
+            "penalties": int(day_map[key]["penalty_total"]) if key in day_map else 0,
+        })
+
+    return {"start_date": str(start_date), "end_date": end_date, "trend": trend}
+
+
 @router.post("/daily/pdf")
 async def generate_daily_pdf(
     request_body: dict,

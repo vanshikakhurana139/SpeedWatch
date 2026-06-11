@@ -24,12 +24,21 @@ const getEffectiveLimit = (zone) => {
     const now = new Date();
     const currentHour = now.getHours();
 
-    if (!zone.time_rules || Object.keys(zone.time_rules).length === 0) {
+    let timeRules = zone.time_rules;
+    if (typeof timeRules === 'string') {
+        try {
+            timeRules = JSON.parse(timeRules);
+        } catch (e) {
+            timeRules = {};
+        }
+    }
+
+    if (!timeRules || Object.keys(timeRules).length === 0) {
         return zone.speed_limit;
     }
 
     // Check each time period
-    for (const [period, rules] of Object.entries(zone.time_rules)) {
+    for (const [period, rules] of Object.entries(timeRules)) {
         if (rules.start && rules.end && rules.limit) {
             const [startH] = rules.start.split(':').map(Number);
             const [endH] = rules.end.split(':').map(Number);
@@ -58,7 +67,9 @@ export const getSpeedLimitForPosition = (lat, lng, geofences, loadType = 'empty'
     };
 
     const baseLoadLimit = loadLimits[loadType] || 50;
-    let applicableLimit = 50; // Plant default
+    const defaultPlantLimit = 50; // Plant default
+    
+    let minZoneLimit = Infinity;
     let currentZone = null;
 
     // Check each geofence
@@ -67,17 +78,19 @@ export const getSpeedLimitForPosition = (lat, lng, geofences, loadType = 'empty'
             const zoneLimit = getEffectiveLimit(zone);
 
             // Hazardous load special rules
-            const adjustedLimit = loadType === 'hazardous' && zone.zone_type === 'pedestrian'
-                ? Math.min(zoneLimit, 10)
+            const adjustedLimit = loadType === 'hazardous'
+                ? Math.min(zoneLimit, 10) // Max 10 km/h for hazardous in any zone
                 : zoneLimit;
 
             // Take most restrictive limit
-            if (adjustedLimit < applicableLimit) {
-                applicableLimit = adjustedLimit;
+            if (adjustedLimit < minZoneLimit) {
+                minZoneLimit = adjustedLimit;
                 currentZone = zone;
             }
         }
     }
+
+    const applicableLimit = currentZone ? minZoneLimit : defaultPlantLimit;
 
     // Apply load limit
     const finalLimit = Math.min(applicableLimit, baseLoadLimit);

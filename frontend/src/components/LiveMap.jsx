@@ -94,7 +94,7 @@ function MapOverlay() {
             <div style={{
                 background: 'rgba(16,19,24,0.85)', border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '4px', padding: '5px 9px',
-                fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-3)',
+                fontFamily: 'var(--font-mono, monospace)', fontSize: '11px', color: '#A0AEC0',
                 backdropFilter: 'blur(4px)',
             }}>
                 SAIL RDCIS · Ranchi · 23.343°N 85.319°E

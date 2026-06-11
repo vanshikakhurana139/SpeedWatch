@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Rect, Circle, Polygon } from 'react-native-svg';
+import { Image } from 'react-native';
 import { Colors, Typography, Spacing } from '../theme';
 import { vehiclesApi } from '../api/vehicles';
 import { geofencesApi } from '../api/geofences';
@@ -21,11 +22,12 @@ import { useTripStore } from '../store/tripStore';
 
 // Custom Icons
 const SailLogo = () => (
-    <Svg width="28" height="28" viewBox="0 0 40 40" fill="none">
-        <Rect width="40" height="40" rx="6" fill="#FFFFFF" />
-        <Path d="M20 6 L34 20 L20 34 L6 20 Z" fill="none" stroke="#07162C" strokeWidth="2.5" />
-        <Path d="M20 12 L28 20 L20 28 L12 20 Z" fill="#07162C" />
-    </Svg>
+    <View style={{ width: 28, height: 28, backgroundColor: '#FFFFFF', borderRadius: 6, padding: 2, alignItems: 'center', justifyContent: 'center' }}>
+        <Image 
+            source={require('../../assets/sail-logo.png')} 
+            style={{ width: '100%', height: '100%', resizeMode: 'contain' }} 
+        />
+    </View>
 );
 
 const TruckIcon = ({ color = '#A0AEC0' }) => (

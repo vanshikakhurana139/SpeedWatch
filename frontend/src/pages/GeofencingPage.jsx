@@ -67,7 +67,7 @@ export default function GeofencingPage() {
                 name: zoneName.trim(),
                 zone_type: zoneType,
                 speed_limit: parseInt(speedLimit),
-                polygon: { type: 'Polygon', coordinates: pendingCoordinates },
+                coordinates: pendingCoordinates,
                 time_rules: {}
             }
             console.log('Sending zone creation request:', newZone)
@@ -79,7 +79,10 @@ export default function GeofencingPage() {
             await fetchZones()
         } catch (err) {
             console.error('Failed to create zone - Full error:', err.response?.data || err.message)
-            const errorMsg = err.response?.data?.detail || err.response?.data?.message || err.message || 'Unknown error'
+            let errorMsg = err.response?.data?.detail || err.response?.data?.message || err.message || 'Unknown error'
+            if (Array.isArray(errorMsg)) {
+                errorMsg = errorMsg.map(e => e.msg || JSON.stringify(e)).join(', ')
+            }
             alert(`Failed to create speed zone: ${errorMsg}`)
         } finally {
             setLoading(false)

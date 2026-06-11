@@ -8,7 +8,7 @@ const getApiBaseUrl = () => {
     // 3. It will look like: 192.168.1.xxx or 10.0.0.xxx
 
     // Example: If your computer IP is 192.168.1.100 and backend runs on port 8000:
-    return 'http://192.168.1.2:8000';  // ⚠️ CHANGE THIS TO YOUR IP
+    return 'http://172.16.72.83:8000';  // ⚠️ CHANGE THIS TO YOUR IP
 };
 
 export const API_CONFIG = {
@@ -32,7 +32,7 @@ export const API_CONFIG = {
         GET_VIOLATIONS: '/api/violations',
 
         // Geofences
-        GEOFENCES: '/api/geofences',
+        GEOFENCES: '/api/geofences/',
 
         // SOS
         SOS: '/api/sos',

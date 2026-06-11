@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import apiClient from '../api/client'
-import { format, subDays } from 'date-fns'
+import { format } from 'date-fns'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line
 } from 'recharts'
@@ -112,20 +112,29 @@ export default function ReportsPage() {
     const safetyScore = Math.max(100 - (totalViolations * 5) - Math.floor(totalPenalty / 1000), 50)
     const complianceRate = `${safetyScore.toFixed(1)}%`
 
-    // Mock trend data based on selected date
-    const selectedDateObj = new Date(date)
-    const trendData = Array.from({ length: 7 }).map((_, idx) => {
-        const d = subDays(selectedDateObj, 6 - idx)
-        const dayName = format(d, 'EEE (dd/MM)')
-        // Make the selected date match actual violations, other days are random realistic values
-        const isSelectedDate = idx === 6
-        const violCount = isSelectedDate ? totalViolations : Math.max(Math.floor(Math.random() * 8) - 1, 0)
-        return {
-            name: dayName,
-            Violations: violCount,
-            Penalties: violCount * 1200
+    // Real 7-day trend data from API
+    const [trendData, setTrendData] = useState([])
+
+    // Fetch weekly trend whenever report data or selected date changes
+    useEffect(() => {
+        if (!reportData) return
+        const fetchTrend = async () => {
+            try {
+                const resp = await apiClient.get('/reports/weekly-trend', { params: { end_date: date } })
+                const mapped = (resp.data.trend || []).map(d => ({
+                    name: format(new Date(d.date + 'T00:00:00'), 'EEE (dd/MM)'),
+                    Violations: d.violations,
+                    Penalties: d.penalties,
+                }))
+                setTrendData(mapped)
+            } catch (err) {
+                console.error('Failed to load weekly trend:', err)
+                // Fall back to showing just today's data as a single bar
+                setTrendData([{ name: format(new Date(date), 'EEE (dd/MM)'), Violations: totalViolations, Penalties: totalPenalty }])
+            }
         }
-    })
+        fetchTrend()
+    }, [reportData, date])
 
     return (
         <div style={S.page}>

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Rect, Circle, Line, Polygon } from 'react-native-svg';
+import Svg, { Path, Rect, Circle, Line, Polygon, SvgUri } from 'react-native-svg';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Colors, Typography, Spacing } from '../theme';
 import { useTripStore } from '../store/tripStore';
@@ -22,11 +22,13 @@ import apiClient from '../api/client';
 
 // SVG Icons
 const SailLogo = () => (
-    <Svg width="28" height="28" viewBox="0 0 40 40" fill="none">
-        <Rect width="40" height="40" rx="6" fill="#FFFFFF" />
-        <Path d="M20 6 L34 20 L20 34 L6 20 Z" fill="none" stroke="#07162C" strokeWidth="2.5" />
-        <Path d="M20 12 L28 20 L20 28 L12 20 Z" fill="#07162C" />
-    </Svg>
+    <View style={{ width: 28, height: 28, backgroundColor: '#FFFFFF', borderRadius: 6, padding: 2, alignItems: 'center', justifyContent: 'center' }}>
+        <SvgUri
+            width="100%"
+            height="100%"
+            uri="https://upload.wikimedia.org/wikipedia/en/0/00/Steel_Authority_of_India_logo.svg"
+        />
+    </View>
 );
 
 const ShieldXIcon = () => (
