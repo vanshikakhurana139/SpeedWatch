@@ -2,7 +2,7 @@
 // IMPORTANT: Replace this with your actual backend IP address
 
 const getApiBaseUrl = () => {
-    // For development on Windows with Expo Go:
+    // For development on Windows with Expo Go :
     // 1. Find your computer's local IP: Open CMD and type 'ipconfig'
     // 2. Look for "IPv4 Address" under your active network adapter
     // 3. It will look like: 192.168.1.xxx or 10.0.0.xxx
