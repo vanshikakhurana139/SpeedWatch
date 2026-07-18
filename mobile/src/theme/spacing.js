@@ -1,4 +1,5 @@
 // Industrial 8pt grid system
+
 export const Spacing = {
     xs: 4,
     sm: 8,
